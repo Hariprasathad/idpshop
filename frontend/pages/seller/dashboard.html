@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Dashboard | IDPShop</title>
+    <link rel="icon" type="image/png" href="../../public/idp_browser_tab_logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/global.css">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/seller.css">
+</head>
+<body>
+
+    <!-- Top Navbar -->
+    <nav class="top-navbar">
+        <div class="logo-section">
+            <img src="../../public/idp_shop_logo.png" alt="IDPShop" style="height: 40px; width: auto;">
+            <span>Seller Center</span>
+        </div>
+
+        <div class="right-section">
+
+
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="left-sidebar">
+            <a onclick="switchTab('dashboard')" class="sidebar-item active" data-target="dashboard">
+                <i class="fa-solid fa-chart-pie"></i> Dashboard
+            </a>
+            <a onclick="switchTab('products')" class="sidebar-item" data-target="products">
+                <i class="fa-solid fa-box-open"></i> Products
+            </a>
+            <a onclick="switchTab('orders')" class="sidebar-item" data-target="orders">
+                <i class="fa-solid fa-cart-shopping"></i> Orders
+            </a>
+
+        </aside>
+
+        <!-- Content Area -->
+        <main class="content-area">
+            <div class="welcome-header" style="margin-bottom: 2.5rem;">
+                <h1 style="margin: 0; font-size: 2rem; font-weight: 800;">Welcome back, Merchant Store!</h1>
+                <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 1.1rem;">Here's what's happening with your shop today.</p>
+            </div>
+            
+            <!-- Dashboard Tab -->
+            <div id="tab-dashboard" class="tab-content active">
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">
+                            <i class="fa-solid fa-box"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Total Products</h3>
+                            <p>124</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #dcfce7; color: #10b981;">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Total Orders</h3>
+                            <p>856</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #fef3c7; color: #f59e0b;">
+                            <i class="fa-solid fa-indian-rupee-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Total Sales</h3>
+                            <p>₹ 4,52,000</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #fee2e2; color: #ef4444;">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Low Stock Items</h3>
+                            <p>8</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-panel">
+                    <h2>Recent Orders Summary</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#ORD-7742</td>
+                                <td>Wireless Earbuds Pro</td>
+                                <td>2</td>
+                                <td><span class="status-badge status-warning">Processing</span></td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-7741</td>
+                                <td>Smart Watch Series 5</td>
+                                <td>1</td>
+                                <td><span class="status-badge status-info">Shipped</span></td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-7740</td>
+                                <td>Mechanical Keyboard</td>
+                                <td>1</td>
+                                <td><span class="status-badge status-success">Delivered</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Products Tab -->
+            <div id="tab-products" class="tab-content">
+                <h1 style="margin-top: 0; margin-bottom: 2rem;">Product Management</h1>
+                
+                <div class="section-panel">
+                    <h2>Add New Product</h2>
+                    <form onsubmit="event.preventDefault(); alert('Product Added Successfully!');" class="form-grid">
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9rem;">Product Name</label>
+                            <input type="text" class="form-control" placeholder="Enter product name" required>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9rem;">Price (₹)</label>
+                            <input type="number" class="form-control" placeholder="Enter price" required>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9rem;">Discount (%)</label>
+                            <input type="number" class="form-control" placeholder="Enter discount percentage" value="0">
+                        </div>
+<div class="form-group full-width" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px;">
+    <label style="font-weight: 500; font-size: 0.9rem; display: block; text-align: left;">
+        Description
+    </label>
+    <textarea class="form-control" rows="3" placeholder="Enter product description" required 
+        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+    </textarea>
+</div>
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9rem;">Initial Stock</label>
+                            <input type="number" class="form-control" placeholder="Enter stock quantity" required>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9rem;">Total Products (Batch Size)</label>
+                            <input type="number" class="form-control" placeholder="Enter total batch quantity" required>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9rem;">Product Image Upload</label>
+                            <input type="file" class="form-control" accept="image/*" required>
+                        </div>
+                        <div class="form-group full-width" style="margin-top: 1rem;">
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Product</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="section-panel">
+                    <h2>Inventory & Products List</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>Price</th>
+                                <th>Discount</th>
+                                <th>Selling Price</th>
+                                <th>Stock</th>
+                                <th>Total Prod.</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><div style="font-weight: 600;">Wireless Earbuds Pro</div></td>
+                                <td>₹ 2,499</td>
+                                <td><span style="color: var(--secondary); font-weight: 600;">10% OFF</span></td>
+                                <td style="font-weight: 700; color: var(--secondary);">₹ 2,249</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span>45</span>
+                                        <button class="btn btn-sm" style="background: var(--background); color: var(--text-main);" title="Update Stock"><i class="fa-solid fa-pen"></i></button>
+                                    </div>
+                                </td>
+                                <td>100</td>
+                                <td><span class="status-badge status-success">In Stock</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    <button class="btn btn-sm btn-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><div style="font-weight: 600;">Smart Watch Series 5</div></td>
+                                <td>₹ 4,999</td>
+                                <td><span style="color: var(--text-muted);">0%</span></td>
+                                <td style="font-weight: 700; color: var(--secondary);">₹ 4,999</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span style="color: var(--danger); font-weight: bold;">0</span>
+                                        <button class="btn btn-sm" style="background: var(--background); color: var(--text-main);" title="Update Stock"><i class="fa-solid fa-pen"></i></button>
+                                    </div>
+                                </td>
+                                <td>50</td>
+                                <td><span class="status-badge status-danger">Out of Stock</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    <button class="btn btn-sm btn-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><div style="font-weight: 600;">Mechanical Keyboard</div></td>
+                                <td>₹ 3,200</td>
+                                <td><span style="color: var(--secondary); font-weight: 600;">5% OFF</span></td>
+                                <td style="font-weight: 700; color: var(--secondary);">₹ 3,040</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span style="color: var(--warning); font-weight: bold;">3</span>
+                                        <button class="btn btn-sm" style="background: var(--background); color: var(--text-main);" title="Update Stock"><i class="fa-solid fa-pen"></i></button>
+                                    </div>
+                                </td>
+                                <td>20</td>
+                                <td><span class="status-badge status-warning">Low Stock</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    <button class="btn btn-sm btn-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="tab-orders" class="tab-content">
+                <h1 style="margin-top: 0; margin-bottom: 2rem;">Orders Management</h1>
+                
+                <div class="section-panel">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Product</th>
+                                <th>User</th>
+                                <th>Quantity</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span style="font-weight: 600;">#ORD-7742</span></td>
+                                <td>Wireless Earbuds Pro</td>
+                                <td>Rahul Sharma</td>
+                                <td>2</td>
+                                <td><span class="status-badge status-warning">Processing</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-success" onclick="updateOrderStatus(this)"><i class="fa-solid fa-truck"></i> Mark Shipped</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span style="font-weight: 600;">#ORD-7741</span></td>
+                                <td>Smart Watch Series 5</td>
+                                <td>Priya Patel</td>
+                                <td>1</td>
+                                <td><span class="status-badge status-info">Shipped</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="updateOrderStatus(this)"><i class="fa-solid fa-check-double"></i> Mark Delivered</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span style="font-weight: 600;">#ORD-7730</span></td>
+                                <td>Mechanical Keyboard</td>
+                                <td>Amit Kumar</td>
+                                <td>1</td>
+                                <td><span class="status-badge status-success">Delivered</span></td>
+                                <td>
+                                    <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-check"></i> Completed</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+
+        </main>
+    </div>
+
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/seller.js"></script>
+
+</body>
+</html>

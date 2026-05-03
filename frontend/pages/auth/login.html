@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | IDPShop</title>
+
+    <link rel="icon" type="image/png" href="../../public/idp_browser_tab_logo.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/auth.css">
+</head>
+
+<body>
+
+    <div class="auth-card">
+
+        <div class="auth-header">
+            <img src="../../public/idp_shop_logo.png" alt="IDPShop Logo" style="width: 120px; margin-bottom: 1rem;">
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle">Sign in to continue</p>
+        </div>
+
+        <form id="loginForm">
+
+            <div class="auth-input-group">
+                <label class="auth-label">Email Address</label>
+                <input type="email" id="email" class="auth-input" placeholder="name@example.com" required>
+            </div>
+
+            <div class="auth-input-group">
+                <label class="auth-label">Password</label>
+                <input type="password" id="password" class="auth-input" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="auth-submit-btn">Sign In</button>
+
+        </form>
+
+        <p class="auth-footer">
+            Don't have an account?
+            <a href="register.html" class="auth-link">Create one</a>
+        </p>
+
+    </div>
+
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            await login(email, password);
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,9 @@
+terraform/.terraform/
+terraform/*.zip
+terraform/*.tfstate
+terraform/*.tfstate.backup
+
+backend/layers/
+__pycache__/
+*.pyc
+.env
