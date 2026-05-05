@@ -21,8 +21,7 @@
         </div>
 
         <div class="right-section">
-
-
+            <!-- Navbar icons or profile can go here -->
         </div>
     </nav>
 
@@ -38,6 +37,16 @@
             <a onclick="switchTab('orders')" class="sidebar-item" data-target="orders">
                 <i class="fa-solid fa-cart-shopping"></i> Orders
             </a>
+
+            <div style="margin-top: auto; padding-top: 2rem;">
+                <a onclick="logout()" 
+                   onmouseover="this.style.backgroundColor='#fecaca'; this.style.color='#dc2626';" 
+                   onmouseout="this.style.backgroundColor='transparent'; this.style.color='#ef4444';"
+                   class="sidebar-item sidebar-logout" 
+                   style="color: #ef4444; border-top: 1px solid var(--border); padding-top: 1.5rem; cursor: pointer; transition: 0.3s;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </a>
+            </div>
 
         </aside>
 
@@ -58,7 +67,7 @@
                         </div>
                         <div class="stat-info">
                             <h3>Total Products</h3>
-                            <p>124</p>
+                            <p id="totalProducts">0</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -67,7 +76,7 @@
                         </div>
                         <div class="stat-info">
                             <h3>Total Orders</h3>
-                            <p>856</p>
+                            <p id="totalOrders">0</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -76,7 +85,7 @@
                         </div>
                         <div class="stat-info">
                             <h3>Total Sales</h3>
-                            <p>₹ 4,52,000</p>
+                            <p id="totalSales">₹ 0</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -85,7 +94,7 @@
                         </div>
                         <div class="stat-info">
                             <h3>Low Stock Items</h3>
-                            <p>8</p>
+                            <p id="lowStock">0</p>
                         </div>
                     </div>
                 </div>
@@ -101,25 +110,8 @@
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>#ORD-7742</td>
-                                <td>Wireless Earbuds Pro</td>
-                                <td>2</td>
-                                <td><span class="status-badge status-warning">Processing</span></td>
-                            </tr>
-                            <tr>
-                                <td>#ORD-7741</td>
-                                <td>Smart Watch Series 5</td>
-                                <td>1</td>
-                                <td><span class="status-badge status-info">Shipped</span></td>
-                            </tr>
-                            <tr>
-                                <td>#ORD-7740</td>
-                                <td>Mechanical Keyboard</td>
-                                <td>1</td>
-                                <td><span class="status-badge status-success">Delivered</span></td>
-                            </tr>
+                        <tbody id="recentOrders">
+                            <!-- Dynamic Rows -->
                         </tbody>
                     </table>
                 </div>
@@ -131,41 +123,40 @@
                 
                 <div class="section-panel">
                     <h2>Add New Product</h2>
-                    <form onsubmit="event.preventDefault(); alert('Product Added Successfully!');" class="form-grid">
+                    <form id="addProductForm" onsubmit="event.preventDefault(); handleSubmit();" class="form-grid">
                         <div class="form-group">
                             <label style="font-weight: 500; font-size: 0.9rem;">Product Name</label>
-                            <input type="text" class="form-control" placeholder="Enter product name" required>
+                            <input type="text" id="pName" class="form-control" placeholder="Enter product name" required>
                         </div>
                         <div class="form-group">
                             <label style="font-weight: 500; font-size: 0.9rem;">Price (₹)</label>
-                            <input type="number" class="form-control" placeholder="Enter price" required>
+                            <input type="number" id="pPrice" class="form-control" placeholder="Enter price" required>
                         </div>
                         <div class="form-group">
                             <label style="font-weight: 500; font-size: 0.9rem;">Discount (%)</label>
-                            <input type="number" class="form-control" placeholder="Enter discount percentage" value="0">
+                            <input type="number" id="pDiscount" class="form-control" placeholder="Enter discount percentage" value="0">
                         </div>
-<div class="form-group full-width" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px;">
-    <label style="font-weight: 500; font-size: 0.9rem; display: block; text-align: left;">
-        Description
-    </label>
-    <textarea class="form-control" rows="3" placeholder="Enter product description" required 
-        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-    </textarea>
-</div>
+                        <div class="form-group full-width" style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px;">
+                            <label style="font-weight: 500; font-size: 0.9rem; display: block; text-align: left;">
+                                Description
+                            </label>
+                            <textarea id="pDescription" class="form-control" rows="3" placeholder="Enter product description" required 
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
+                        </div>
                         <div class="form-group">
                             <label style="font-weight: 500; font-size: 0.9rem;">Initial Stock</label>
-                            <input type="number" class="form-control" placeholder="Enter stock quantity" required>
+                            <input type="number" id="pStock" class="form-control" placeholder="Enter stock quantity" required>
                         </div>
                         <div class="form-group">
                             <label style="font-weight: 500; font-size: 0.9rem;">Total Products (Batch Size)</label>
-                            <input type="number" class="form-control" placeholder="Enter total batch quantity" required>
+                            <input type="number" id="pTotal" class="form-control" placeholder="Enter total batch quantity" required>
                         </div>
                         <div class="form-group">
                             <label style="font-weight: 500; font-size: 0.9rem;">Product Image Upload</label>
-                            <input type="file" class="form-control" accept="image/*" required>
+                            <input type="file" id="image" class="form-control" accept="image/*">
                         </div>
                         <div class="form-group full-width" style="margin-top: 1rem;">
-                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Product</button>
+                            <button type="submit" id="submitBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Product</button>
                         </div>
                     </form>
                 </div>
@@ -185,61 +176,8 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td><div style="font-weight: 600;">Wireless Earbuds Pro</div></td>
-                                <td>₹ 2,499</td>
-                                <td><span style="color: var(--secondary); font-weight: 600;">10% OFF</span></td>
-                                <td style="font-weight: 700; color: var(--secondary);">₹ 2,249</td>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <span>45</span>
-                                        <button class="btn btn-sm" style="background: var(--background); color: var(--text-main);" title="Update Stock"><i class="fa-solid fa-pen"></i></button>
-                                    </div>
-                                </td>
-                                <td>100</td>
-                                <td><span class="status-badge status-success">In Stock</span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-primary" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                                    <button class="btn btn-sm btn-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><div style="font-weight: 600;">Smart Watch Series 5</div></td>
-                                <td>₹ 4,999</td>
-                                <td><span style="color: var(--text-muted);">0%</span></td>
-                                <td style="font-weight: 700; color: var(--secondary);">₹ 4,999</td>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <span style="color: var(--danger); font-weight: bold;">0</span>
-                                        <button class="btn btn-sm" style="background: var(--background); color: var(--text-main);" title="Update Stock"><i class="fa-solid fa-pen"></i></button>
-                                    </div>
-                                </td>
-                                <td>50</td>
-                                <td><span class="status-badge status-danger">Out of Stock</span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-primary" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                                    <button class="btn btn-sm btn-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><div style="font-weight: 600;">Mechanical Keyboard</div></td>
-                                <td>₹ 3,200</td>
-                                <td><span style="color: var(--secondary); font-weight: 600;">5% OFF</span></td>
-                                <td style="font-weight: 700; color: var(--secondary);">₹ 3,040</td>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <span style="color: var(--warning); font-weight: bold;">3</span>
-                                        <button class="btn btn-sm" style="background: var(--background); color: var(--text-main);" title="Update Stock"><i class="fa-solid fa-pen"></i></button>
-                                    </div>
-                                </td>
-                                <td>20</td>
-                                <td><span class="status-badge status-warning">Low Stock</span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-primary" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                                    <button class="btn btn-sm btn-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
-                                </td>
-                            </tr>
+                        <tbody id="productTable">
+                            <!-- Dynamic Rows -->
                         </tbody>
                     </table>
                 </div>
@@ -261,37 +199,8 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td><span style="font-weight: 600;">#ORD-7742</span></td>
-                                <td>Wireless Earbuds Pro</td>
-                                <td>Rahul Sharma</td>
-                                <td>2</td>
-                                <td><span class="status-badge status-warning">Processing</span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-success" onclick="updateOrderStatus(this)"><i class="fa-solid fa-truck"></i> Mark Shipped</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><span style="font-weight: 600;">#ORD-7741</span></td>
-                                <td>Smart Watch Series 5</td>
-                                <td>Priya Patel</td>
-                                <td>1</td>
-                                <td><span class="status-badge status-info">Shipped</span></td>
-                                <td>
-                                    <button class="btn btn-sm btn-primary" onclick="updateOrderStatus(this)"><i class="fa-solid fa-check-double"></i> Mark Delivered</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><span style="font-weight: 600;">#ORD-7730</span></td>
-                                <td>Mechanical Keyboard</td>
-                                <td>Amit Kumar</td>
-                                <td>1</td>
-                                <td><span class="status-badge status-success">Delivered</span></td>
-                                <td>
-                                    <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500;"><i class="fa-solid fa-check"></i> Completed</span>
-                                </td>
-                            </tr>
+                        <tbody id="ordersTable">
+                            <!-- Dynamic Rows -->
                         </tbody>
                     </table>
                 </div>

@@ -66,6 +66,8 @@
     color: var(--primary);
 }
 
+
+
 /* Content Area */
 .seller-content-area {
     flex: 1;
@@ -219,4 +221,14 @@
     justify-content: center;
     color: var(--text-muted);
     border: 2px dashed var(--border);
+}
+
+/* 🚨 LOGOUT BUTTON OVERRIDE (CRITICAL) */
+aside.left-sidebar a.sidebar-logout {
+    color: #ef4444 !important;
+}
+
+aside.left-sidebar a.sidebar-logout:hover {
+    background: #ef4444 !important;
+    color: #ffffff !important;
 }

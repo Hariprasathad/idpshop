@@ -1,9 +1,7 @@
 import json
 import boto3
 import jwt
-import uuid
 import os
-from datetime import datetime
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['PRODUCTS_TABLE'])
@@ -17,7 +15,7 @@ def response(status, body):
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
-            "Access-Control-Allow-Methods": "OPTIONS,POST"
+            "Access-Control-Allow-Methods": "OPTIONS,DELETE"
         },
         "body": json.dumps(body)
     }
@@ -25,35 +23,45 @@ def response(status, body):
 
 def lambda_handler(event, context):
     try:
+        # 🔐 Auth
         headers = event.get('headers', {})
         token = headers.get('Authorization') or headers.get('authorization')
-        
+
         if not token:
             return response(401, {"message": "Unauthorized"})
 
         token = token.replace("Bearer ", "")
         decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+
         seller_id = decoded.get('userId')
 
+        # 📦 Body
         body = json.loads(event.get('body', '{}'))
+        product_id = body.get('productId')
 
-        product = {
-            "productId": str(uuid.uuid4()),
-            "name": body.get("name"),
-            "price": int(body.get("price") or 0),
-            "discount": int(body.get("discount") or 0),
-            "description": body.get("description"),
-            "stock": int(body.get("stock") or 0),
-            "total": int(body.get("total") or 0),
-            "imageUrl": body.get("imageUrl", ""),
-            "createdAt": datetime.utcnow().isoformat(),
-            "sellerId": seller_id
-        }
+        if not product_id:
+            return response(400, {"message": "productId required"})
 
-        table.put_item(Item=product)
+        # 🔒 Check ownership
+        item = table.get_item(Key={"productId": product_id}).get("Item")
 
-        return response(200, {"message": "Product added successfully"})
+        if not item:
+            return response(404, {"message": "Product not found"})
+
+        if item.get("sellerId") != seller_id:
+            return response(403, {"message": "Forbidden"})
+
+        # 🗑️ Delete item
+        table.delete_item(Key={"productId": product_id})
+
+        return response(200, {"message": "Product deleted successfully"})
+
+    except jwt.ExpiredSignatureError:
+        return response(401, {"message": "Token expired"})
+
+    except jwt.InvalidTokenError:
+        return response(401, {"message": "Invalid token"})
 
     except Exception as e:
-        print(f"Add Product Error: {str(e)}") # ⭐ Log to CloudWatch
+        print(f"Delete Product Error: {str(e)}") # ⭐ Log to CloudWatch
         return response(500, {"error": str(e)})

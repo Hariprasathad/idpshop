@@ -31,7 +31,7 @@ async function apiCall(endpoint, method = 'GET', body = null, params = null) {
         const response = await fetch(url, options);
         const data = await response.json();
         if (!response.ok) {
-            throw new Error(data.message || 'Something went wrong');
+            throw new Error(data.message || data.error || 'Something went wrong');
         }
         return data;
     } catch (error) {

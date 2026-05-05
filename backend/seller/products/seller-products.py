@@ -1,14 +1,26 @@
 import json
 import boto3
 import jwt
+import os
 from boto3.dynamodb.conditions import Attr
+from decimal import Decimal
 
-# 🔧 DynamoDB
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('hariprasath-products')
+table = dynamodb.Table(os.environ['PRODUCTS_TABLE'])
 
-# 🔐 same secret as login
-SECRET_KEY = "your_secret"
+SECRET_KEY = os.environ['SECRET_KEY']
+
+
+# ✅ Convert Decimal → int (DynamoDB fix)
+def convert_decimal(obj):
+    if isinstance(obj, list):
+        return [convert_decimal(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_decimal(v) for k, v in obj.items()}
+    elif isinstance(obj, Decimal):
+        return int(obj)
+    else:
+        return obj
 
 
 def response(status, body):
@@ -25,30 +37,42 @@ def response(status, body):
 
 def lambda_handler(event, context):
     try:
-        # 🔐 JWT check
-        token = event['headers'].get('Authorization')
+        # 🔐 Get token (case-safe)
+        headers = event.get('headers', {})
+        token = headers.get('Authorization') or headers.get('authorization')
+
         if not token:
             return response(401, {"message": "Unauthorized"})
 
         token = token.replace("Bearer ", "")
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
 
-        try:
-            decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        except jwt.ExpiredSignatureError:
-            return response(401, {"message": "Token expired"})
-        except jwt.InvalidTokenError:
-            return response(401, {"message": "Invalid token"})
+        seller_id = decoded.get('userId')
 
-        seller_email = decoded['email']
+        # 📦 Query params
+        params = event.get('queryStringParameters') or {}
 
-        # 📦 Fetch products
-        result = table.scan(
-            FilterExpression=Attr('sellerEmail').eq(seller_email)
-        )
+        limit = int(params.get('limit', 10))
+        last_key = params.get('lastKey')
 
-        products = result.get('Items', [])
+        scan_kwargs = {
+            "FilterExpression": Attr('sellerId').eq(seller_id),
+            "Limit": limit
+        }
 
-        return response(200, products)
+        # 👉 Pagination support
+        if last_key:
+            scan_kwargs["ExclusiveStartKey"] = json.loads(last_key)
+
+        res = table.scan(**scan_kwargs)
+
+        items = convert_decimal(res.get('Items', []))
+
+        return response(200, {
+            "products": items,
+            "lastKey": res.get('LastEvaluatedKey')
+        })
 
     except Exception as e:
+        print(f"Seller Products Error: {str(e)}") # ⭐ Log to CloudWatch
         return response(500, {"error": str(e)})

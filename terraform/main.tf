@@ -362,6 +362,413 @@ resource "aws_lambda_permission" "search" {
   source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*/search"
 }
 
+# --- ADD PRODUCT LAMBDA ---
+
+data "archive_file" "add_product_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../backend/seller/products/add-product.py"
+  output_path = "${path.module}/add-product.zip"
+}
+
+resource "aws_lambda_function" "add_product" {
+  function_name = "${var.project_name}-add-product"
+  runtime       = "python3.12"
+  handler       = "add-product.lambda_handler"
+
+  filename         = data.archive_file.add_product_zip.output_path
+  source_code_hash = data.archive_file.add_product_zip.output_base64sha256
+
+  role    = aws_iam_role.lambda_exec.arn
+  timeout = 10
+  layers  = [aws_lambda_layer_version.auth_layer.arn]
+
+  environment {
+    variables = {
+      PRODUCTS_TABLE = aws_dynamodb_table.products.name
+      SECRET_KEY     = var.jwt_secret
+    }
+  }
+}
+
+resource "aws_apigatewayv2_integration" "add_product" {
+  api_id           = aws_apigatewayv2_api.api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.add_product.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "add_product" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "POST /add-product"
+  target    = "integrations/${aws_apigatewayv2_integration.add_product.id}"
+}
+
+resource "aws_lambda_permission" "add_product" {
+  statement_id  = "AllowAPIGatewayInvokeAddProduct"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.add_product.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*/add-product"
+}
+
+# --- S3 UPLOAD LAMBDA ---
+
+data "archive_file" "upload_url_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../backend/s3/get-upload-url.py"
+  output_path = "${path.module}/upload-url.zip"
+}
+
+resource "aws_lambda_function" "get_upload_url" {
+  function_name = "${var.project_name}-get-upload-url"
+  runtime       = "python3.12"
+  handler       = "get-upload-url.lambda_handler"
+
+  filename         = data.archive_file.upload_url_zip.output_path
+  source_code_hash = data.archive_file.upload_url_zip.output_base64sha256
+
+  role    = aws_iam_role.lambda_exec.arn
+  timeout = 10
+
+  environment {
+    variables = {
+      BUCKET_NAME = aws_s3_bucket.product_images.bucket
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_s3" {
+  name = "lambda-s3-access"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:PutObject"
+        ],
+        Resource = "${aws_s3_bucket.product_images.arn}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_apigatewayv2_integration" "upload_url" {
+  api_id           = aws_apigatewayv2_api.api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.get_upload_url.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "upload_url" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "GET /get-upload-url"
+  target    = "integrations/${aws_apigatewayv2_integration.upload_url.id}"
+}
+
+resource "aws_lambda_permission" "upload_url" {
+  statement_id  = "AllowAPIGatewayInvokeUploadUrl"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.get_upload_url.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*/get-upload-url"
+}
+
+# --- SELLER PRODUCTS LAMBDA ---
+
+data "archive_file" "seller_products_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../backend/seller/products/seller-products.py"
+  output_path = "${path.module}/seller-products.zip"
+}
+
+resource "aws_lambda_function" "seller_products" {
+  function_name = "${var.project_name}-seller-products"
+  runtime       = "python3.12"
+  handler       = "seller-products.lambda_handler"
+
+  filename         = data.archive_file.seller_products_zip.output_path
+  source_code_hash = data.archive_file.seller_products_zip.output_base64sha256
+
+  role    = aws_iam_role.lambda_exec.arn
+  timeout = 10
+
+  layers = [aws_lambda_layer_version.auth_layer.arn]
+
+  environment {
+    variables = {
+      PRODUCTS_TABLE = aws_dynamodb_table.products.name
+      SECRET_KEY     = var.jwt_secret
+    }
+  }
+}
+
+resource "aws_apigatewayv2_integration" "seller_products" {
+  api_id           = aws_apigatewayv2_api.api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.seller_products.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "seller_products" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "GET /seller-products"
+  target    = "integrations/${aws_apigatewayv2_integration.seller_products.id}"
+}
+
+resource "aws_lambda_permission" "seller_products" {
+  statement_id  = "AllowAPIGatewayInvokeSellerProducts"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.seller_products.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*/seller-products"
+}
+
+# --- UPDATE PRODUCT LAMBDA ---
+
+data "archive_file" "update_product_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../backend/seller/products/update-product.py"
+  output_path = "${path.module}/update-product.zip"
+}
+
+resource "aws_lambda_function" "update_product" {
+  function_name = "${var.project_name}-update-product"
+  runtime       = "python3.12"
+  handler       = "update-product.lambda_handler"
+
+  filename         = data.archive_file.update_product_zip.output_path
+  source_code_hash = data.archive_file.update_product_zip.output_base64sha256
+
+  role    = aws_iam_role.lambda_exec.arn
+  timeout = 10
+
+  layers = [aws_lambda_layer_version.auth_layer.arn]
+
+  environment {
+    variables = {
+      PRODUCTS_TABLE = aws_dynamodb_table.products.name
+      SECRET_KEY     = var.jwt_secret
+    }
+  }
+}
+
+resource "aws_apigatewayv2_integration" "update_product" {
+  api_id           = aws_apigatewayv2_api.api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.update_product.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "update_product" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "PUT /update-product"
+  target    = "integrations/${aws_apigatewayv2_integration.update_product.id}"
+}
+
+resource "aws_lambda_permission" "update_product" {
+  statement_id  = "AllowAPIGatewayInvokeUpdateProduct"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.update_product.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*/update-product"
+}
+
+# --- DELETE PRODUCT LAMBDA ---
+
+data "archive_file" "delete_product_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../backend/seller/products/delete-product.py"
+  output_path = "${path.module}/delete-product.zip"
+}
+
+resource "aws_lambda_function" "delete_product" {
+  function_name = "${var.project_name}-delete-product"
+  runtime       = "python3.12"
+  handler       = "delete-product.lambda_handler"
+
+  filename         = data.archive_file.delete_product_zip.output_path
+  source_code_hash = data.archive_file.delete_product_zip.output_base64sha256
+
+  role    = aws_iam_role.lambda_exec.arn
+  timeout = 10
+
+  layers = [aws_lambda_layer_version.auth_layer.arn]
+
+  environment {
+    variables = {
+      PRODUCTS_TABLE = aws_dynamodb_table.products.name
+      SECRET_KEY     = var.jwt_secret
+    }
+  }
+}
+
+resource "aws_apigatewayv2_integration" "delete_product" {
+  api_id           = aws_apigatewayv2_api.api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.delete_product.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "delete_product" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "DELETE /delete-product"
+  target    = "integrations/${aws_apigatewayv2_integration.delete_product.id}"
+}
+
+resource "aws_lambda_permission" "delete_product" {
+  statement_id  = "AllowAPIGatewayInvokeDeleteProduct"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.delete_product.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*/delete-product"
+}
+
+# --- SELLER STATS LAMBDA ---
+
+data "archive_file" "seller_stats_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../backend/seller/stats/seller-stats.py"
+  output_path = "${path.module}/seller-stats.zip"
+}
+
+resource "aws_lambda_function" "seller_stats" {
+  function_name = "${var.project_name}-seller-stats"
+  runtime       = "python3.12"
+  handler       = "seller-stats.lambda_handler"
+
+  filename         = data.archive_file.seller_stats_zip.output_path
+  source_code_hash = data.archive_file.seller_stats_zip.output_base64sha256
+
+  role    = aws_iam_role.lambda_exec.arn
+  timeout = 10
+
+  layers = [aws_lambda_layer_version.auth_layer.arn]
+
+  environment {
+    variables = {
+      PRODUCTS_TABLE = aws_dynamodb_table.products.name
+      ORDERS_TABLE   = aws_dynamodb_table.orders.name
+      SECRET_KEY     = var.jwt_secret
+    }
+  }
+}
+
+resource "aws_apigatewayv2_integration" "seller_stats" {
+  api_id           = aws_apigatewayv2_api.api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.seller_stats.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "seller_stats" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "GET /seller-stats"
+  target    = "integrations/${aws_apigatewayv2_integration.seller_stats.id}"
+}
+
+resource "aws_lambda_permission" "seller_stats" {
+  statement_id  = "AllowAPIGatewayInvokeSellerStats"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.seller_stats.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*/seller-stats"
+}
+
+# --- SELLER ORDERS LAMBDA ---
+
+data "archive_file" "seller_orders_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../backend/seller/orders/seller-orders.py"
+  output_path = "${path.module}/seller-orders.zip"
+}
+
+resource "aws_lambda_function" "seller_orders" {
+  function_name = "${var.project_name}-seller-orders"
+  runtime       = "python3.12"
+  handler       = "seller-orders.lambda_handler"
+
+  filename         = data.archive_file.seller_orders_zip.output_path
+  source_code_hash = data.archive_file.seller_orders_zip.output_base64sha256
+
+  role    = aws_iam_role.lambda_exec.arn
+  timeout = 10
+
+  layers = [aws_lambda_layer_version.auth_layer.arn]
+
+  environment {
+    variables = {
+      ORDERS_TABLE = aws_dynamodb_table.orders.name
+      SECRET_KEY   = var.jwt_secret
+    }
+  }
+}
+
+resource "aws_apigatewayv2_integration" "seller_orders" {
+  api_id           = aws_apigatewayv2_api.api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.seller_orders.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "seller_orders" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "GET /seller-orders"
+  target    = "integrations/${aws_apigatewayv2_integration.seller_orders.id}"
+}
+
+resource "aws_lambda_permission" "seller_orders" {
+  statement_id  = "AllowAPIGatewayInvokeSellerOrders"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.seller_orders.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*/seller-orders"
+}
+
+# --- UPDATE ORDER STATUS LAMBDA ---
+
+data "archive_file" "update_order_status_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../backend/seller/orders/update-order-status.py"
+  output_path = "${path.module}/update-order-status.zip"
+}
+
+resource "aws_lambda_function" "update_order_status" {
+  function_name = "${var.project_name}-update-order-status"
+  runtime       = "python3.12"
+  handler       = "update-order-status.lambda_handler"
+
+  filename         = data.archive_file.update_order_status_zip.output_path
+  source_code_hash = data.archive_file.update_order_status_zip.output_base64sha256
+
+  role    = aws_iam_role.lambda_exec.arn
+  timeout = 10
+
+  layers = [aws_lambda_layer_version.auth_layer.arn]
+
+  environment {
+    variables = {
+      ORDERS_TABLE = aws_dynamodb_table.orders.name
+      SECRET_KEY   = var.jwt_secret
+    }
+  }
+}
+
+resource "aws_apigatewayv2_integration" "update_order_status" {
+  api_id           = aws_apigatewayv2_api.api.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = aws_lambda_function.update_order_status.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "update_order_status" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "PUT /update-order-status"
+  target    = "integrations/${aws_apigatewayv2_integration.update_order_status.id}"
+}
+
+resource "aws_lambda_permission" "update_order_status" {
+  statement_id  = "AllowAPIGatewayInvokeUpdateOrderStatus"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.update_order_status.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*/update-order-status"
+}
+
 # --- FRONTEND S3 BUCKET ---
 
 resource "aws_s3_bucket" "frontend" {

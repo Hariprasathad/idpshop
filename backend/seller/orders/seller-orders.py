@@ -1,14 +1,26 @@
 import json
 import boto3
 import jwt
+import os
 from boto3.dynamodb.conditions import Attr
+from decimal import Decimal
 
-# 🔧 DynamoDB
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('hariprasath-orders')
+orders_table = dynamodb.Table(os.environ['ORDERS_TABLE'])
 
-# 🔐 same secret
-SECRET_KEY = "your_secret"
+SECRET_KEY = os.environ['SECRET_KEY']
+
+
+# Convert Decimal → int
+def convert_decimal(obj):
+    if isinstance(obj, list):
+        return [convert_decimal(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_decimal(v) for k, v in obj.items()}
+    elif isinstance(obj, Decimal):
+        return int(obj)
+    else:
+        return obj
 
 
 def response(status, body):
@@ -25,45 +37,32 @@ def response(status, body):
 
 def lambda_handler(event, context):
     try:
-        # 🔐 JWT check
-        token = event['headers'].get('Authorization')
+        # 🔐 Auth
+        headers = event.get('headers', {})
+        token = headers.get('Authorization') or headers.get('authorization')
+
         if not token:
             return response(401, {"message": "Unauthorized"})
 
         token = token.replace("Bearer ", "")
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
 
-        try:
-            decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        except jwt.ExpiredSignatureError:
-            return response(401, {"message": "Token expired"})
-        except jwt.InvalidTokenError:
-            return response(401, {"message": "Invalid token"})
+        seller_id = decoded.get('userId')
 
-        seller_email = decoded['email']
-
-        # 📦 Query params (for limit)
-        params = event.get('queryStringParameters') or {}
-        limit = int(params.get('limit', 0))
-
-        # 🧾 Fetch orders
-        result = table.scan(
-            FilterExpression=Attr('sellerEmail').eq(seller_email)
+        # 📦 Fetch orders
+        res = orders_table.scan(
+            FilterExpression=Attr('sellerId').eq(seller_id)
         )
 
-        orders = result.get('Items', [])
+        orders = convert_decimal(res.get('Items', []))
 
-        # 🔽 Sort latest first (requires createdAt field)
-        orders = sorted(
-            orders,
-            key=lambda x: x.get('createdAt', ''),
-            reverse=True
-        )
+        # 🟢 Sort by latest (createdAt DESC)
+        orders.sort(key=lambda x: x.get('createdAt', ''), reverse=True)
 
-        # 🔢 Apply limit (for recent orders)
-        if limit:
-            orders = orders[:limit]
-
-        return response(200, orders)
+        return response(200, {
+            "orders": orders
+        })
 
     except Exception as e:
+        print(f"Seller Orders Error: {str(e)}") # ⭐ Log to CloudWatch
         return response(500, {"error": str(e)})

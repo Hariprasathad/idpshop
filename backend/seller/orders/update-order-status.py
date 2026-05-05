@@ -1,13 +1,12 @@
 import json
 import boto3
 import jwt
+import os
 
-# 🔧 DynamoDB
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('hariprasath-orders')
+table = dynamodb.Table(os.environ['ORDERS_TABLE'])
 
-# 🔐 same secret
-SECRET_KEY = "your_secret"
+SECRET_KEY = os.environ['SECRET_KEY']
 
 
 def response(status, body):
@@ -24,29 +23,44 @@ def response(status, body):
 
 def lambda_handler(event, context):
     try:
-        # 🔐 JWT check
-        token = event['headers'].get('Authorization')
+        # 🔐 Auth
+        headers = event.get('headers', {})
+        token = headers.get('Authorization') or headers.get('authorization')
+
         if not token:
             return response(401, {"message": "Unauthorized"})
 
         token = token.replace("Bearer ", "")
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
 
-        try:
-            decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        except jwt.ExpiredSignatureError:
-            return response(401, {"message": "Token expired"})
-        except jwt.InvalidTokenError:
-            return response(401, {"message": "Invalid token"})
+        seller_id = decoded.get('userId')
 
-        # 📦 Get request body
-        body = json.loads(event['body'])
+        # 📦 Body
+        body = json.loads(event.get('body', '{}'))
+
         order_id = body.get("orderId")
         new_status = body.get("status")
 
         if not order_id or not new_status:
-            return response(400, {"message": "Missing orderId or status"})
+            return response(400, {"message": "orderId and status required"})
 
-        # 🔄 Update order status
+        # 🔒 Allowed statuses
+        allowed_status = ["Processing", "Shipped", "Delivered"]
+
+        if new_status not in allowed_status:
+            return response(400, {"message": "Invalid status value"})
+
+        # 🔍 Check order exists
+        item = table.get_item(Key={"orderId": order_id}).get("Item")
+
+        if not item:
+            return response(404, {"message": "Order not found"})
+
+        # 🔒 Check ownership (IMPORTANT)
+        if item.get("sellerId") != seller_id:
+            return response(403, {"message": "Forbidden"})
+
+        # 🔄 Update
         table.update_item(
             Key={"orderId": order_id},
             UpdateExpression="SET #s = :status",
@@ -54,7 +68,14 @@ def lambda_handler(event, context):
             ExpressionAttributeValues={":status": new_status}
         )
 
-        return response(200, {"message": "Order status updated"})
+        return response(200, {"message": "Order status updated successfully"})
+
+    except jwt.ExpiredSignatureError:
+        return response(401, {"message": "Token expired"})
+
+    except jwt.InvalidTokenError:
+        return response(401, {"message": "Invalid token"})
 
     except Exception as e:
+        print(f"Update Order Status Error: {str(e)}") # ⭐ Log to CloudWatch
         return response(500, {"error": str(e)})
