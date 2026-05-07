@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | IDPShop</title>
+
+    <link rel="icon" type="image/png" href="../../public/idp_browser_tab_logo.png">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../../css/global.css">
+    <style>
+        .checkout-container {
+            max-width: 800px;
+            margin: 3rem auto;
+            padding: 0 1rem;
+        }
+        .checkout-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .order-summary {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e2e8f0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .info-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .label { color: #64748b; font-weight: 500; }
+        .value { color: #1e293b; font-weight: 700; }
+        
+        .cod-badge {
+            background: #fff7ed;
+            color: #c2410c;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #fed7aa;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+        
+        .delivery-note {
+            font-size: 0.9rem;
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .checkout-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .btn-cancel { background: #f1f5f9; color: #475569; }
+        .btn-cancel:hover { background: #e2e8f0; }
+    </style>
+</head>
+
+<body style="background-color: #f1f5f9;">
+
+    <div class="checkout-container">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <img src="../../public/idp_shop_logo.png" alt="Logo" style="height: 50px;">
+            <h1 style="margin-top: 1rem; font-size: 1.75rem;">Finalize Your Order</h1>
+        </div>
+
+        <div class="checkout-card">
+            
+            <!-- Customer Details -->
+            <h2 style="font-size: 1.25rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-truck-fast"></i> Shipping Details</h2>
+            <div class="order-summary">
+                <div class="info-row">
+                    <span class="label">Name</span>
+                    <span class="value" id="custName">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Phone</span>
+                    <span class="value" id="custPhone">-</span>
+                </div>
+                <div class="info-row" style="flex-direction: column; gap: 5px;">
+                    <span class="label">Address</span>
+                    <span class="value" id="custAddress">-</span>
+                </div>
+            </div>
+
+            <!-- Product Summary -->
+            <h2 style="font-size: 1.25rem; margin-bottom: 1.5rem;"><i class="fa-solid fa-cart-shopping"></i> Product Summary</h2>
+            <div id="productSummaryList">
+                <!-- Items dynamically loaded here -->
+            </div>
+
+            <!-- Payment Method -->
+            <h2 style="font-size: 1.25rem; margin-bottom: 1rem;"><i class="fa-solid fa-credit-card"></i> Payment Method</h2>
+            <div class="cod-badge">
+                <i class="fa-solid fa-money-bill-1-wave"></i>
+                Cash on Delivery Only (COD)
+            </div>
+
+            <p class="delivery-note">
+                <i class="fa-solid fa-clock"></i> Standard delivery takes <strong>7 working days</strong>.
+            </p>
+
+            <div class="checkout-actions">
+                <button class="btn btn-cancel" onclick="cancelOrder()">
+                    Cancel
+                </button>
+                <button class="btn btn-primary" onclick="confirmOrder()">
+                    Confirm Order
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/api.js"></script>
+    <script>
+        // Check Auth
+        const user = checkAuth();
+        if (!user) window.location.href = '../auth/login.html';
+
+        const source = localStorage.getItem('checkoutSource');
+        let checkoutItems = [];
+
+        if (source === 'cart') {
+            checkoutItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+        } else {
+            const single = JSON.parse(localStorage.getItem('checkoutProduct'));
+            if (single) checkoutItems = [single];
+        }
+
+        if (checkoutItems.length === 0) window.location.href = 'dashboard.html';
+
+        // Populate Data
+        document.getElementById('custName').innerText = user.name;
+        document.getElementById('custPhone').innerText = user.phone || '9999999999';
+        document.getElementById('custAddress').innerText = `${user.addressLine || 'Address'}, ${user.city || ''}, ${user.state || ''} - ${user.pincode || ''}`;
+
+        // Render Items in Summary
+        function renderSummary() {
+            const container = document.getElementById('productSummaryList');
+            let total = 0;
+            
+            const html = checkoutItems.map((item, index) => {
+                const price = item.sellingPrice || item.price;
+                const qty = item.quantity || 1;
+                const lineTotal = price * qty;
+                total += lineTotal;
+
+                return `
+                    <div class="order-summary" style="margin-bottom: 1.5rem;">
+                        <div class="info-row">
+                            <span class="label">Item</span>
+                            <span class="value">${item.name}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Quantity</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="number" value="${qty}" min="1" max="10" 
+                                       style="width: 60px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; text-align: center;" 
+                                       onchange="updateSingleQty(${index}, this.value)">
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Price</span>
+                            <span class="value">₹${lineTotal}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                ${html}
+                <div class="order-summary" style="background: white; border-top: 2px solid var(--primary);">
+                    <div class="info-row">
+                        <span class="label" style="font-size: 1.1rem; color: #1e293b; font-weight: 700;">Total Payable</span>
+                        <span class="value" id="totalAmount" style="font-size: 1.4rem; color: var(--primary);">₹${total}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateSingleQty(index, val) {
+            checkoutItems[index].quantity = parseInt(val);
+            renderSummary();
+        }
+
+        renderSummary();
+
+        function cancelOrder() {
+            if (confirm("Are you sure you want to cancel?")) {
+                localStorage.removeItem('checkoutSource');
+                window.location.href = 'dashboard.html';
+            }
+        }
+
+        async function confirmOrder() {
+            const btn = document.querySelector('.btn-primary');
+            btn.innerText = "Placing Order...";
+            btn.disabled = true;
+
+            try {
+                const payload = {
+                    items: checkoutItems.map(i => ({
+                        productId: i.productId,
+                        quantity: i.quantity || 1
+                    })),
+                    address: document.getElementById('custAddress').innerText
+                };
+
+                await apiCall('place-order', 'POST', payload);
+
+                alert(`🎉 Order Success!\n\nYour order for ${checkoutItems.length} items has been placed.\nPayment: Cash on Delivery.`);
+                localStorage.removeItem('checkoutSource');
+                localStorage.removeItem('cartItems'); // Clear cart locally
+                window.location.href = 'dashboard.html';
+            } catch (err) {
+                alert("Error: " + err.message);
+                btn.innerText = "Confirm Order";
+                btn.disabled = false;
+            }
+        }
+    </script>
+
+</body>
+</html>

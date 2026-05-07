@@ -1,36 +1,114 @@
-import os
-import boto3
 import json
-from boto3.dynamodb.conditions import Key
+import boto3
+import os
+from decimal import Decimal
 
-# Environment variables
-REVIEWS_TABLE = os.environ.get('REVIEWS_TABLE', 'hariprasath-reviews')
-FRONTEND_URL = os.environ.get('FRONTEND_URL')
+# ============================================
+# 🔥 DynamoDB
+# ============================================
 
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(REVIEWS_TABLE)
+dynamodb = boto3.resource("dynamodb")
 
-def response(status_code, body):
+reviews_table = dynamodb.Table(os.environ["REVIEWS_TABLE"])
+
+
+# ============================================
+# 🔁 Convert Decimal
+# ============================================
+
+def convert_decimal(obj):
+
+    if isinstance(obj, list):
+        return [convert_decimal(i) for i in obj]
+
+    elif isinstance(obj, dict):
+        return {k: convert_decimal(v) for k, v in obj.items()}
+
+    elif isinstance(obj, Decimal):
+        return int(obj)
+
+    return obj
+
+
+# ============================================
+# 📦 Response
+# ============================================
+
+def response(status, body):
+
     return {
-        'statusCode': status_code,
-        'headers': {
-            'Access-Control-Allow-Origin': FRONTEND_URL,
-            'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PUT,DELETE',
-            'Access-Control-Allow-Credentials': 'true',
-            'Content-Type': 'application/json'
+        "statusCode": status,
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "OPTIONS,GET"
         },
-        'body': json.dumps(body)
+        "body": json.dumps(body)
     }
 
+
+# ============================================
+# 🚀 Lambda Handler
+# ============================================
+
 def lambda_handler(event, context):
+
     try:
-        params = event.get('queryStringParameters') or {}
-        product_id = params.get('productId')
+
+        # 📦 Query params
+        params = event.get("queryStringParameters") or {}
+
+        product_id = params.get("productId")
+
         if not product_id:
-            return response(400, {'message': 'Missing productId'})
-            
-        db_response = table.query(KeyConditionExpression=Key('productId').eq(product_id))
-        return response(200, db_response.get('Items', []))
+
+            return response(400, {
+                "message": "productId required"
+            })
+
+
+        # 🔍 Scan Reviews
+        result = reviews_table.scan(
+            FilterExpression="productId = :pid",
+            ExpressionAttributeValues={
+                ":pid": product_id
+            }
+        )
+
+        reviews = result.get("Items", [])
+
+
+        # ⭐ Average Rating
+        avg_rating = 0
+
+        if reviews:
+
+            total = sum(
+                review.get("rating", 0)
+                for review in reviews
+            )
+
+            avg_rating = round(
+                total / len(reviews),
+                1
+            )
+
+
+        return response(200, {
+
+            "reviews": convert_decimal(reviews),
+
+            "totalReviews": len(reviews),
+
+            "averageRating": avg_rating
+
+        })
+
+
     except Exception as e:
-        return response(500, {'message': str(e)})
+
+        print("Get Reviews Error:", str(e))
+
+        return response(500, {
+            "error": str(e)
+        })

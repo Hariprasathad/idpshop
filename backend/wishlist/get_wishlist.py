@@ -2,8 +2,6 @@ import json
 import boto3
 import jwt
 import os
-import uuid
-from datetime import datetime
 from decimal import Decimal
 
 # ============================================
@@ -12,12 +10,8 @@ from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
 
-cart_table = dynamodb.Table(
-    os.environ["CART_TABLE"]
-)
-
-products_table = dynamodb.Table(
-    os.environ["PRODUCTS_TABLE"]
+wishlist_table = dynamodb.Table(
+    os.environ["WISHLIST_TABLE"]
 )
 
 SECRET_KEY = os.environ["SECRET_KEY"]
@@ -50,7 +44,7 @@ def response(status, body):
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
-            "Access-Control-Allow-Methods": "OPTIONS,POST"
+            "Access-Control-Allow-Methods": "OPTIONS,GET"
         },
         "body": json.dumps(body)
     }
@@ -86,78 +80,22 @@ def lambda_handler(event, context):
         user_id = decoded.get("userId")
 
 
-        # 📦 Body
-        body = json.loads(event.get("body", "{}"))
-
-        product_id = body.get("productId")
-
-        quantity = int(body.get("quantity", 1))
-
-
-        if not product_id:
-
-            return response(400, {
-                "message": "productId required"
-            })
-
-
-        # 🔍 Product Exists
-        product = products_table.get_item(
-            Key={
-                "productId": product_id
-            }
-        ).get("Item")
-
-        if not product:
-
-            return response(404, {
-                "message": "Product not found"
-            })
-
-
-        # 🛑 Limit Check (Max 10)
-        current_cart = cart_table.scan(
+        # 📦 Get Wishlist
+        result = wishlist_table.scan(
             FilterExpression="userId = :uid",
-            ExpressionAttributeValues={":uid": user_id},
-            Select="COUNT"
-        )
-        if current_cart.get("Count", 0) >= 10:
-            return response(400, {
-                "message": "Cart limit reached (Max 10 items allowed)"
-            })
-
-
-        # 💾 Save Cart
-        price = product.get("price", 0)
-        discount = product.get("discount", 0)
-        selling_price = price - (price * discount / 100)
-
-        cart_item = {
-            "cartId": str(uuid.uuid4()),
-            "userId": user_id,
-            "productId": product_id,
-            "quantity": quantity,
-            "name": product.get("name"),
-            "description": product.get("description"),
-            "imageUrl": product.get("imageUrl"),
-            "price": price,
-            "discount": discount,
-            "sellingPrice": selling_price,
-            "rating": product.get("rating", 0),
-            "stock": product.get("stock", 0),
-            "createdAt": datetime.utcnow().isoformat()
-        }
-
-        cart_table.put_item(
-            Item=cart_item
+            ExpressionAttributeValues={
+                ":uid": user_id
+            }
         )
 
+        items = result.get("Items", [])
 
-        return response(201, {
 
-            "message": "Added to cart",
+        return response(200, {
 
-            "cart": convert_decimal(cart_item)
+            "wishlist": convert_decimal(items),
+
+            "count": len(items)
         })
 
 
@@ -177,7 +115,7 @@ def lambda_handler(event, context):
 
     except Exception as e:
 
-        print("Add Cart Error:", str(e))
+        print("Get Wishlist Error:", str(e))
 
         return response(500, {
             "error": str(e)

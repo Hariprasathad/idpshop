@@ -3,24 +3,34 @@ import boto3
 import os
 import uuid
 
-s3 = boto3.client('s3')
+from botocore.config import Config
+
+s3 = boto3.client(
+    's3',
+    region_name='ap-southeast-1',
+    config=Config(signature_version='s3v4')
+)
 BUCKET = os.environ['BUCKET_NAME']
 
 def lambda_handler(event, context):
     try:
-        file_name = f"{uuid.uuid4()}.jpg"
+        params = event.get("queryStringParameters") or {}
+        content_type = params.get("contentType", "image/jpeg")
+        extension = content_type.split("/")[-1]
+        file_name = f"{uuid.uuid4()}.{extension}"
 
         upload_url = s3.generate_presigned_url(
             'put_object',
             Params={
                 'Bucket': BUCKET,
                 'Key': file_name,
-                'ContentType': '*/*'   # ⭐ IMPORTANT FIX
+                'ContentType': content_type
             },
             ExpiresIn=300
         )
 
-        image_url = f"https://{BUCKET}.s3.amazonaws.com/{file_name}"
+        # Use a consistent regional URL
+        image_url = f"https://{BUCKET}.s3.ap-southeast-1.amazonaws.com/{file_name}"
 
         return {
             "statusCode": 200,

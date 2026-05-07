@@ -2,7 +2,6 @@ import json
 import boto3
 import jwt
 import os
-from decimal import Decimal
 
 # ============================================
 # 🔥 DynamoDB
@@ -10,27 +9,11 @@ from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
 
-cart_table = dynamodb.Table(
-    os.environ["CART_TABLE"]
+users_table = dynamodb.Table(
+    os.environ["USERS_TABLE"]
 )
 
 SECRET_KEY = os.environ["SECRET_KEY"]
-
-
-# ============================================
-# 🔁 Decimal Convert
-# ============================================
-
-def convert_decimal(obj):
-    if isinstance(obj, list):
-        return [convert_decimal(i) for i in obj]
-    elif isinstance(obj, dict):
-        return {k: convert_decimal(v) for k, v in obj.items()}
-    elif isinstance(obj, Decimal):
-        if obj % 1 == 0:
-            return int(obj)
-        return float(obj)
-    return obj
 
 
 # ============================================
@@ -44,7 +27,7 @@ def response(status, body):
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
-            "Access-Control-Allow-Methods": "OPTIONS,GET"
+            "Access-Control-Allow-Methods": "OPTIONS,PUT"
         },
         "body": json.dumps(body)
     }
@@ -58,7 +41,10 @@ def lambda_handler(event, context):
 
     try:
 
-        # 🔐 JWT
+        # ============================================
+        # 🔐 JWT AUTH
+        # ============================================
+
         headers = event.get("headers", {})
 
         token = headers.get("Authorization") or headers.get("authorization")
@@ -80,22 +66,59 @@ def lambda_handler(event, context):
         user_id = decoded.get("userId")
 
 
-        # 📦 Get Cart Items
-        result = cart_table.scan(
-            FilterExpression="userId = :uid",
+        # ============================================
+        # 📦 BODY
+        # ============================================
+
+        body = json.loads(event.get("body", "{}"))
+
+
+        # ============================================
+        # 🛠️ UPDATE USER
+        # ============================================
+
+        users_table.update_item(
+
+            Key={
+                "userId": user_id
+            },
+
+            UpdateExpression="""
+                SET
+                phone = :phone,
+                addressLine = :addressLine,
+                city = :city,
+                #state = :state,
+                pincode = :pincode
+            """,
+
+            ExpressionAttributeNames={
+                "#state": "state"
+            },
+
             ExpressionAttributeValues={
-                ":uid": user_id
+
+                ":phone": body.get("phone", ""),
+
+                ":addressLine": body.get("addressLine", ""),
+
+                ":city": body.get("city", ""),
+
+                ":state": body.get("state", ""),
+
+                ":pincode": body.get("pincode", "")
             }
         )
 
-        items = result.get("Items", [])
 
+        # ============================================
+        # ✅ SUCCESS
+        # ============================================
 
         return response(200, {
 
-            "cart": convert_decimal(items),
+            "message": "Profile updated successfully"
 
-            "count": len(items)
         })
 
 
@@ -115,7 +138,7 @@ def lambda_handler(event, context):
 
     except Exception as e:
 
-        print("Get Cart Error:", str(e))
+        print("Update Profile Error:", str(e))
 
         return response(500, {
             "error": str(e)

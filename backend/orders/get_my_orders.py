@@ -10,8 +10,8 @@ from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
 
-cart_table = dynamodb.Table(
-    os.environ["CART_TABLE"]
+orders_table = dynamodb.Table(
+    os.environ["ORDERS_TABLE"]
 )
 
 SECRET_KEY = os.environ["SECRET_KEY"]
@@ -58,7 +58,10 @@ def lambda_handler(event, context):
 
     try:
 
-        # 🔐 JWT
+        # ============================================
+        # 🔐 JWT AUTH
+        # ============================================
+
         headers = event.get("headers", {})
 
         token = headers.get("Authorization") or headers.get("authorization")
@@ -80,22 +83,57 @@ def lambda_handler(event, context):
         user_id = decoded.get("userId")
 
 
-        # 📦 Get Cart Items
-        result = cart_table.scan(
+        # ============================================
+        # 📦 GET USER ORDERS
+        # ============================================
+
+        result = orders_table.scan(
             FilterExpression="userId = :uid",
             ExpressionAttributeValues={
                 ":uid": user_id
             }
         )
 
-        items = result.get("Items", [])
+        orders = result.get("Items", [])
 
+
+        # ============================================
+        # 📦 SORT LATEST FIRST
+        # ============================================
+
+        orders.sort(
+            key=lambda x: x.get("createdAt", ""),
+            reverse=True
+        )
+
+
+        # ============================================
+        # 📦 CHECK REVIEWS
+        # ============================================
+        reviews_table = dynamodb.Table(os.environ["REVIEWS_TABLE"])
+        
+        for order in orders:
+            # Check if user reviewed THIS product
+            review_check = reviews_table.scan(
+                FilterExpression="userId = :uid AND productId = :pid",
+                ExpressionAttributeValues={
+                    ":uid": user_id,
+                    ":pid": order.get("productId")
+                }
+            )
+            order["reviewed"] = review_check.get("Count", 0) > 0
+
+
+        # ============================================
+        # ✅ SUCCESS
+        # ============================================
 
         return response(200, {
 
-            "cart": convert_decimal(items),
+            "orders": convert_decimal(orders),
 
-            "count": len(items)
+            "count": len(orders)
+
         })
 
 
@@ -115,7 +153,7 @@ def lambda_handler(event, context):
 
     except Exception as e:
 
-        print("Get Cart Error:", str(e))
+        print("Get My Orders Error:", str(e))
 
         return response(500, {
             "error": str(e)

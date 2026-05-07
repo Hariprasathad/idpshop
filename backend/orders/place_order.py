@@ -12,8 +12,8 @@ from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
 
-cart_table = dynamodb.Table(
-    os.environ["CART_TABLE"]
+orders_table = dynamodb.Table(
+    os.environ["ORDERS_TABLE"]
 )
 
 products_table = dynamodb.Table(
@@ -88,76 +88,66 @@ def lambda_handler(event, context):
 
         # 📦 Body
         body = json.loads(event.get("body", "{}"))
+        
+        items = body.get("items", [])
+        shipping_address = body.get("address", "")
 
-        product_id = body.get("productId")
+        if not items:
+            return response(400, {"message": "No items provided"})
 
-        quantity = int(body.get("quantity", 1))
+        created_orders = []
+        total_order_amount = 0
 
+        # Process each item
+        for item in items:
+            product_id = item.get("productId")
+            quantity = int(item.get("quantity", 1))
 
-        if not product_id:
+            # 🔍 Product Exists & Stock Check
+            prod_data = products_table.get_item(Key={"productId": product_id}).get("Item")
+            if not prod_data:
+                continue # Skip or handle error
 
-            return response(400, {
-                "message": "productId required"
-            })
+            if int(prod_data.get("stock", 0)) < quantity:
+                return response(400, {"message": f"Not enough stock for {prod_data.get('name')}"})
 
+            # 💰 Calculation
+            price = int(prod_data.get("sellingPrice") or prod_data.get("price"))
+            item_total = price * quantity
+            total_order_amount += item_total
 
-        # 🔍 Product Exists
-        product = products_table.get_item(
-            Key={
-                "productId": product_id
+            # 💾 Create Order
+            order_id = str(uuid.uuid4())
+            order_item = {
+                "orderId": order_id,
+                "userId": user_id,
+                "sellerId": prod_data.get("sellerId"),
+                "productId": product_id,
+                "productName": prod_data.get("name"),
+                "imageUrl": prod_data.get("imageUrl"),
+                "quantity": quantity,
+                "price": price,
+                "totalAmount": item_total,
+                "shippingAddress": shipping_address,
+                "paymentMethod": "Cash on Delivery",
+                "status": "Processing",
+                "createdAt": datetime.utcnow().isoformat()
             }
-        ).get("Item")
 
-        if not product:
+            orders_table.put_item(Item=order_item)
+            created_orders.append(order_item)
 
-            return response(404, {
-                "message": "Product not found"
-            })
-
-
-        # 🛑 Limit Check (Max 10)
-        current_cart = cart_table.scan(
-            FilterExpression="userId = :uid",
-            ExpressionAttributeValues={":uid": user_id},
-            Select="COUNT"
-        )
-        if current_cart.get("Count", 0) >= 10:
-            return response(400, {
-                "message": "Cart limit reached (Max 10 items allowed)"
-            })
-
-
-        # 💾 Save Cart
-        price = product.get("price", 0)
-        discount = product.get("discount", 0)
-        selling_price = price - (price * discount / 100)
-
-        cart_item = {
-            "cartId": str(uuid.uuid4()),
-            "userId": user_id,
-            "productId": product_id,
-            "quantity": quantity,
-            "name": product.get("name"),
-            "description": product.get("description"),
-            "imageUrl": product.get("imageUrl"),
-            "price": price,
-            "discount": discount,
-            "sellingPrice": selling_price,
-            "rating": product.get("rating", 0),
-            "stock": product.get("stock", 0),
-            "createdAt": datetime.utcnow().isoformat()
-        }
-
-        cart_table.put_item(
-            Item=cart_item
-        )
-
+            # 📉 Update Stock
+            products_table.update_item(
+                Key={"productId": product_id},
+                UpdateExpression="SET stock = stock - :q",
+                ExpressionAttributeValues={":q": quantity}
+            )
 
         return response(201, {
-
-            "message": "Added to cart",
-
-            "cart": convert_decimal(cart_item)
+            "message": "Orders placed successfully",
+            "count": len(created_orders),
+            "totalAmount": convert_decimal(total_order_amount)
         })
 
 
@@ -177,7 +167,7 @@ def lambda_handler(event, context):
 
     except Exception as e:
 
-        print("Add Cart Error:", str(e))
+        print("Place Order Error:", str(e))
 
         return response(500, {
             "error": str(e)

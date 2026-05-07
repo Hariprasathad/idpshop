@@ -18,6 +18,10 @@ output "reviews_table_arn" {
   value = aws_dynamodb_table.reviews.arn
 }
 
+output "reviews_table_name" {
+  value = aws_dynamodb_table.reviews.name
+}
+
 output "product_images_bucket_name" {
   value = aws_s3_bucket.product_images.id
 }
@@ -63,4 +67,52 @@ output "update_order_status_url" {
 
 output "product_images_base_url" {
   value = "https://${aws_s3_bucket.product_images.bucket}.s3.amazonaws.com"
+}
+
+output "add_review_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}add-review"
+}
+
+output "get_reviews_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}reviews"
+}
+
+output "get_products_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}products"
+}
+
+output "search_products_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}search-products"
+}
+
+output "add_to_cart_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}add-to-cart"
+}
+
+output "get_cart_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}cart"
+}
+
+output "add_wishlist_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}add-to-wishlist"
+}
+
+output "get_wishlist_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}wishlist"
+}
+
+output "get_my_orders_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}my-orders"
+}
+
+output "place_order_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}place-order"
+}
+
+output "get_profile_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}profile"
+}
+
+output "update_profile_url" {
+  value = "${aws_apigatewayv2_stage.default.invoke_url}profile"
 }

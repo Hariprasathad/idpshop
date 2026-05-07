@@ -58,17 +58,22 @@ async function addProduct() {
 
     try {
         // STEP 1: Get presigned upload URL
-        const uploadData = await apiCall('get-upload-url');
+        const uploadData = await apiCall('get-upload-url', 'GET', null, { contentType: file.type });
         const { uploadUrl, imageUrl } = uploadData;
 
         // STEP 2: Upload image directly to S3
-        await fetch(uploadUrl, {
+        const uploadRes = await fetch(uploadUrl, {
             method: "PUT",
             headers: {
                 "Content-Type": file.type
             },
             body: file
         });
+
+        if (!uploadRes.ok) {
+            const errorText = await uploadRes.text();
+            throw new Error(`S3 Upload Failed: ${uploadRes.status} ${uploadRes.statusText} - ${errorText}`);
+        }
 
         // STEP 3: Save product with the permanent image URL
         const body = {

@@ -10,8 +10,8 @@ from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
 
-cart_table = dynamodb.Table(
-    os.environ["CART_TABLE"]
+users_table = dynamodb.Table(
+    os.environ["USERS_TABLE"]
 )
 
 SECRET_KEY = os.environ["SECRET_KEY"]
@@ -22,14 +22,16 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 # ============================================
 
 def convert_decimal(obj):
+
     if isinstance(obj, list):
         return [convert_decimal(i) for i in obj]
+
     elif isinstance(obj, dict):
         return {k: convert_decimal(v) for k, v in obj.items()}
+
     elif isinstance(obj, Decimal):
-        if obj % 1 == 0:
-            return int(obj)
-        return float(obj)
+        return int(obj)
+
     return obj
 
 
@@ -58,7 +60,10 @@ def lambda_handler(event, context):
 
     try:
 
-        # 🔐 JWT
+        # ============================================
+        # 🔐 JWT AUTH
+        # ============================================
+
         headers = event.get("headers", {})
 
         token = headers.get("Authorization") or headers.get("authorization")
@@ -80,22 +85,41 @@ def lambda_handler(event, context):
         user_id = decoded.get("userId")
 
 
-        # 📦 Get Cart Items
-        result = cart_table.scan(
-            FilterExpression="userId = :uid",
-            ExpressionAttributeValues={
-                ":uid": user_id
+        # ============================================
+        # 👤 GET USER
+        # ============================================
+
+        result = users_table.get_item(
+            Key={
+                "userId": user_id
             }
         )
 
-        items = result.get("Items", [])
+        user = result.get("Item")
 
+
+        if not user:
+
+            return response(404, {
+                "message": "User not found"
+            })
+
+
+        # ============================================
+        # ❌ REMOVE PASSWORD
+        # ============================================
+
+        user.pop("password", None)
+
+
+        # ============================================
+        # ✅ SUCCESS
+        # ============================================
 
         return response(200, {
 
-            "cart": convert_decimal(items),
+            "profile": convert_decimal(user)
 
-            "count": len(items)
         })
 
 
@@ -115,7 +139,7 @@ def lambda_handler(event, context):
 
     except Exception as e:
 
-        print("Get Cart Error:", str(e))
+        print("Get Profile Error:", str(e))
 
         return response(500, {
             "error": str(e)

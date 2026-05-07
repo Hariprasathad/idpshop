@@ -16,6 +16,81 @@
     <!-- CSS -->
     <link rel="stylesheet" href="../../css/global.css">
     <link rel="stylesheet" href="../../css/dashboard.css">
+    <style>
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .product-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid #f1f5f9;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .product-card:hover { 
+            transform: translateY(-8px); 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); 
+            border-color: var(--primary-light);
+        }
+        .wishlist-btn { 
+            position: absolute; 
+            top: 15px; 
+            right: 15px; 
+            background: rgba(255,255,255,0.9); 
+            border: none; 
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer; 
+            color: #94a3b8; 
+            transition: 0.2s; 
+            z-index: 10;
+        }
+        .wishlist-btn:hover { transform: scale(1.1); color: #ef4444; }
+        .wishlist-btn.active { color: #ef4444; background: #fee2e2; }
+
+        .product-img-container {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 1.25rem;
+            overflow: hidden;
+        }
+        .product-img { max-width: 90%; max-height: 90%; object-fit: contain; transition: 0.5s; }
+        .product-card:hover .product-img { transform: scale(1.05); }
+
+        .product-name { font-weight: 700; font-size: 1.1rem; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.4; height: 3rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        
+        .rating-stars { color: #fbbf24; font-size: 0.9rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 4px; }
+        .rating-value { color: #64748b; font-weight: 600; margin-left: 4px; }
+
+        .price-section { display: flex; align-items: center; gap: 10px; margin-bottom: 0.75rem; flex-wrap: wrap; }
+        .selling-price { font-size: 1.4rem; font-weight: 800; color: #0f172a; }
+        .original-price { color: #94a3b8; text-decoration: line-through; font-size: 1rem; }
+        .discount-tag { color: #16a34a; font-weight: 700; font-size: 0.9rem; background: #f0fdf4; padding: 2px 8px; border-radius: 4px; }
+
+        .stock-status { font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-bottom: 1.5rem; }
+        .status-in { color: #16a34a; }
+        .status-out { color: #ef4444; }
+
+        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; }
+        .btn-order { background: #0f172a !important; color: white !important; border: none !important; }
+        .btn-order:hover { background: #1e293b !important; }
+    </style>
 </head>
 
 <body>
@@ -27,11 +102,15 @@
             <img src="../../public/idp_shop_logo.png" alt="Logo" style="height: 40px;">
         </div>
 
-        <div class="nav-center">
-            <input type="text" class="search-input" placeholder="Search products...">
+        <div class="nav-center" id="searchBarContainer">
+            <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search products..." onkeyup="searchProducts()">
+            </div>
         </div>
 
-        <div class="nav-right"></div>
+        <div class="nav-right">
+        </div>
     </nav>
 
     <div class="main-wrapper">
@@ -45,45 +124,148 @@
                     <span>Dashboard</span>
                 </a>
 
-                <a onclick="switchTab('orders')" class="sidebar-link" data-target="orders">
-                    <i class="fa-solid fa-box"></i>
-                    <span>Orders</span>
-                </a>
-
                 <a onclick="switchTab('cart')" class="sidebar-link" data-target="cart">
                     <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Cart</span>
+                    <span>My Cart</span>
+                </a>
+
+                <a onclick="switchTab('wishlist')" class="sidebar-link" data-target="wishlist">
+                    <i class="fa-solid fa-heart"></i>
+                    <span>Wishlist</span>
+                </a>
+
+                <a onclick="switchTab('orders')" class="sidebar-link" data-target="orders">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                    <span>My Orders</span>
+                </a>
+
+                <a onclick="switchTab('profile')" class="sidebar-link" data-target="profile">
+                    <i class="fa-solid fa-user"></i>
+                    <span>Profile</span>
                 </a>
 
             </nav>
 
-            <div style="margin-top:auto;">
-                <a href="../auth/login.html" class="sidebar-link" style="color:red;">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <div style="margin-top:auto; padding-top: 1rem; border-top: 1px solid var(--border);">
+                <a onclick="logout()" 
+                   onmouseover="this.style.backgroundColor='#fecaca'; this.style.color='#dc2626';" 
+                   onmouseout="this.style.backgroundColor='transparent'; this.style.color='#ef4444';"
+                   class="sidebar-link" 
+                   style="color: #ef4444; cursor: pointer; transition: 0.3s;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
                     <span>Logout</span>
                 </a>
             </div>
         </aside>
 
-        <!-- Content -->
+        <!-- Content Area -->
         <main class="content-area">
 
-            <!-- Dashboard -->
+            <!-- Dashboard Tab -->
             <div id="tab-dashboard" class="tab-content active">
-                <h1>Welcome User</h1>
-                <p>This is your dashboard.</p>
+                <div class="welcome-header" style="margin-bottom: 2rem;">
+                    <h1 style="margin: 0; font-size: 2.2rem; font-weight: 800;">Welcome back, <span id="welcomeName" style="color: var(--primary);">hariprasath</span>!</h1>
+                    <p style="color: #64748b; font-size: 1.1rem; margin-top: 0.5rem;">Find the best deals on IDPShop</p>
+                </div>
+                
+                <div class="product-grid" id="productGrid">
+                    <!-- Products load here -->
+                </div>
+
+                <!-- Pagination -->
+                <div id="paginationContainer" style="margin-top: 3rem; text-align: center; display: none;">
+                    <button class="btn btn-outline" id="loadMoreBtn" onclick="loadMoreProducts()" style="padding: 0.75rem 2.5rem; font-weight: 600;">
+                        Load More Products
+                    </button>
+                </div>
             </div>
 
-            <!-- Orders -->
-            <div id="tab-orders" class="tab-content">
-                <h1>Orders</h1>
-                <p>No orders yet.</p>
-            </div>
-
-            <!-- Cart -->
+            <!-- Cart Tab -->
             <div id="tab-cart" class="tab-content">
-                <h1>Cart</h1>
-                <p>Your cart is empty.</p>
+                <div class="welcome-header">
+                    <h1>Your Shopping Cart</h1>
+                </div>
+                <div id="cartItems">
+                    <!-- Cart items loaded via JS -->
+                </div>
+            </div>
+
+            <!-- Wishlist Tab -->
+            <div id="tab-wishlist" class="tab-content">
+                <div class="welcome-header">
+                    <h1>Your Wishlist</h1>
+                </div>
+                <div class="product-grid" id="wishlistGrid">
+                    <!-- Wishlist items loaded via JS -->
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="tab-orders" class="tab-content">
+                <div class="welcome-header">
+                    <h1>Your Orders</h1>
+                </div>
+                <div id="orderHistory">
+                    <!-- Orders loaded via JS -->
+                </div>
+            </div>
+
+            <!-- Profile Tab -->
+            <div id="tab-profile" class="tab-content">
+                <div class="welcome-header">
+                    <h1>My Profile</h1>
+                    <p>Manage your account information and shipping address</p>
+                </div>
+                
+                <div class="section-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+                        <h2 style="font-size: 1.25rem; font-weight: 700;">Personal Information</h2>
+                        <button class="btn btn-primary btn-sm" onclick="editProfile()">
+                            <i class="fa-solid fa-pen"></i> Edit Profile
+                        </button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <div class="profile-info-group">
+                            <label style="display: block; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">Full Name</label>
+                            <p id="profileName" style="font-weight: 600; font-size: 1.1rem;">-</p>
+                        </div>
+                        <div class="profile-info-group">
+                            <label style="display: block; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">Email Address</label>
+                            <p id="profileEmail" style="font-weight: 600; font-size: 1.1rem;">-</p>
+                        </div>
+                        <div class="profile-info-group">
+                            <label style="display: block; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">Phone Number</label>
+                            <p id="profilePhone" style="font-weight: 600; font-size: 1.1rem;">-</p>
+                        </div>
+                        <div class="profile-info-group">
+                            <label style="display: block; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">Role</label>
+                            <p id="profileRole" style="font-weight: 600; font-size: 1.1rem; color: var(--primary);">Customer</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 2rem;">
+                        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem;">Shipping Address</h2>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <div class="profile-info-group" style="grid-column: span 2;">
+                                <label style="display: block; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">Address Line</label>
+                                <p id="profileAddress" style="font-weight: 600; font-size: 1.1rem;">-</p>
+                            </div>
+                            <div class="profile-info-group">
+                                <label style="display: block; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">City</label>
+                                <p id="profileCity" style="font-weight: 600; font-size: 1.1rem;">-</p>
+                            </div>
+                            <div class="profile-info-group">
+                                <label style="display: block; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">State</label>
+                                <p id="profileState" style="font-weight: 600; font-size: 1.1rem;">-</p>
+                            </div>
+                            <div class="profile-info-group">
+                                <label style="display: block; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">Pincode</label>
+                                <p id="profilePincode" style="font-weight: 600; font-size: 1.1rem;">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </main>
@@ -93,7 +275,6 @@
 <script src="../../js/api.js"></script>
 <script src="../../js/auth.js"></script>
 <script src="../../js/user.js"></script>
-
 
 </body>
 </html>

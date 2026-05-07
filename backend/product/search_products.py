@@ -23,21 +23,19 @@ reviews_table = dynamodb.Table(
 # ============================================
 
 def convert_decimal(obj):
-
     if isinstance(obj, list):
         return [convert_decimal(i) for i in obj]
-
     elif isinstance(obj, dict):
         return {k: convert_decimal(v) for k, v in obj.items()}
-
     elif isinstance(obj, Decimal):
-        return int(obj)
-
+        if obj % 1 == 0:
+            return int(obj)
+        return float(obj)
     return obj
 
 
 # ============================================
-# 📦 Common Response
+# 📦 Response
 # ============================================
 
 def response(status, body):
@@ -62,57 +60,60 @@ def lambda_handler(event, context):
     try:
 
         # ============================================
-        # 📦 Query Parameters
+        # 📦 Query Params
         # ============================================
 
         params = event.get("queryStringParameters") or {}
 
-        limit = int(params.get("limit", 10))
+        query = params.get("q", "").strip().lower()
 
-        last_key = params.get("lastKey")
+        if not query:
 
-
-        # ============================================
-        # 📦 Scan Params
-        # ============================================
-
-        scan_params = {
-            "Limit": limit
-        }
-
-
-        # 🔥 Pagination
-        if last_key:
-
-            scan_params["ExclusiveStartKey"] = {
-                "productId": last_key
-            }
+            return response(400, {
+                "message": "Search query required"
+            })
 
 
         # ============================================
-        # 📦 Get Products
+        # 📦 Scan Products
         # ============================================
 
-        result = products_table.scan(**scan_params)
+        result = products_table.scan()
 
         items = result.get("Items", [])
 
 
         # ============================================
-        # 📦 Format Products
+        # 🔍 Filter Products
         # ============================================
 
         products = []
 
         for item in items:
 
-            # ❌ Hide out-of-stock products
+            name = item.get("name", "").lower()
+
+            description = item.get(
+                "description",
+                ""
+            ).lower()
+
+
+            # 🔍 Match
+            if (
+                query not in name and
+                query not in description
+            ):
+                continue
+
+
+            # ❌ Hide out of stock
             if item.get("stock", 0) <= 0:
                 continue
 
 
             # ============================================
-            # ⭐ Calculate Average Rating
+            # ⭐ Rating
             # ============================================
 
             review_result = reviews_table.scan(
@@ -140,7 +141,7 @@ def lambda_handler(event, context):
 
 
             # ============================================
-            # 💰 Selling Price
+            # 💰 Price
             # ============================================
 
             price = item.get("price", 0)
@@ -153,7 +154,7 @@ def lambda_handler(event, context):
 
 
             # ============================================
-            # 📦 Product Response
+            # 📦 Response Product
             # ============================================
 
             products.append({
@@ -181,39 +182,25 @@ def lambda_handler(event, context):
                 "sellerId": item.get("sellerId"),
 
                 "createdAt": item.get("createdAt")
-
             })
 
 
         # ============================================
-        # 🔑 Pagination Key
-        # ============================================
-
-        next_key = None
-
-        if "LastEvaluatedKey" in result:
-
-            next_key = result["LastEvaluatedKey"]["productId"]
-
-
-        # ============================================
-        # ✅ Success Response
+        # ✅ Success
         # ============================================
 
         return response(200, {
 
             "products": convert_decimal(products),
 
-            "count": len(products),
-
-            "lastKey": next_key
+            "count": len(products)
 
         })
 
 
     except Exception as e:
 
-        print("Get Products Error:", str(e))
+        print("Search Products Error:", str(e))
 
         return response(500, {
             "error": str(e)

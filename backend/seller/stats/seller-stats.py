@@ -60,7 +60,7 @@ def lambda_handler(event, context):
         total_orders = len(seller_orders)
 
         # 💰 Total sales
-        total_sales = sum(int(o.get("amount", 0)) for o in seller_orders)
+        total_sales = sum(float(o.get("totalAmount", 0)) for o in seller_orders)
 
         return response(200, {
             "totalProducts": total_products,

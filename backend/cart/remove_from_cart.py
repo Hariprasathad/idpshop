@@ -2,8 +2,6 @@ import json
 import boto3
 import jwt
 import os
-import uuid
-from datetime import datetime
 
 # ============================================
 # 🔥 DynamoDB
@@ -11,16 +9,15 @@ from datetime import datetime
 
 dynamodb = boto3.resource("dynamodb")
 
-reviews_table = dynamodb.Table(os.environ["REVIEWS_TABLE"])
-
-products_table = dynamodb.Table(os.environ["PRODUCTS_TABLE"])
-
+cart_table = dynamodb.Table(
+    os.environ["CART_TABLE"]
+)
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 
 # ============================================
-# 📦 Common Response
+# 📦 Response
 # ============================================
 
 def response(status, body):
@@ -30,7 +27,7 @@ def response(status, body):
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Content-Type,Authorization",
-            "Access-Control-Allow-Methods": "OPTIONS,POST"
+            "Access-Control-Allow-Methods": "OPTIONS,DELETE"
         },
         "body": json.dumps(body)
     }
@@ -65,85 +62,32 @@ def lambda_handler(event, context):
 
         user_id = decoded.get("userId")
 
-        user_name = decoded.get("name", "User")
-
 
         # 📦 Body
         body = json.loads(event.get("body", "{}"))
 
         product_id = body.get("productId")
 
-        rating = body.get("rating")
 
-        comment = body.get("comment", "").strip()
-
-
-        # ❌ Validation
         if not product_id:
 
             return response(400, {
                 "message": "productId required"
             })
 
-        if rating is None:
 
-            return response(400, {
-                "message": "rating required"
-            })
-
-        rating = int(rating)
-
-        if rating < 1 or rating > 5:
-
-            return response(400, {
-                "message": "rating must be between 1 and 5"
-            })
-
-
-        # 🔍 Product Exists?
-        product = products_table.get_item(
+        # 🗑️ Delete Item
+        cart_table.delete_item(
             Key={
+                "userId": user_id,
                 "productId": product_id
             }
-        ).get("Item")
-
-        if not product:
-
-            return response(404, {
-                "message": "Product not found"
-            })
-
-
-        # ⭐ Create Review
-        review_item = {
-
-            "reviewId": str(uuid.uuid4()),
-
-            "productId": product_id,
-
-            "userId": user_id,
-
-            "userName": user_name,
-
-            "rating": rating,
-
-            "comment": comment,
-
-            "createdAt": datetime.utcnow().isoformat()
-        }
-
-
-        # 💾 Save
-        reviews_table.put_item(
-            Item=review_item
         )
 
 
-        return response(201, {
+        return response(200, {
 
-            "message": "Review added successfully",
-
-            "review": review_item
+            "message": "Removed from cart"
 
         })
 
@@ -164,7 +108,7 @@ def lambda_handler(event, context):
 
     except Exception as e:
 
-        print("Add Review Error:", str(e))
+        print("Remove Cart Error:", str(e))
 
         return response(500, {
             "error": str(e)
