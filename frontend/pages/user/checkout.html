@@ -143,7 +143,7 @@
         let checkoutItems = [];
 
         if (source === 'cart') {
-            checkoutItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+            checkoutItems = JSON.parse(localStorage.getItem('checkoutItems')) || [];
         } else {
             const single = JSON.parse(localStorage.getItem('checkoutProduct'));
             if (single) checkoutItems = [single];
@@ -151,10 +151,36 @@
 
         if (checkoutItems.length === 0) window.location.href = 'dashboard.html';
 
-        // Populate Data
+        // Populate Initial Data
         document.getElementById('custName').innerText = user.name;
-        document.getElementById('custPhone').innerText = user.phone || '9999999999';
-        document.getElementById('custAddress').innerText = `${user.addressLine || 'Address'}, ${user.city || ''}, ${user.state || ''} - ${user.pincode || ''}`;
+        document.getElementById('custPhone').innerText = user.phone || '-';
+        document.getElementById('custAddress').innerText = "Loading address...";
+
+        // Fetch Latest Profile Data for Accurate Shipping
+        async function syncProfile() {
+            try {
+                const data = await apiCall('profile');
+                const p = data.profile || {};
+                
+                document.getElementById('custName').innerText = p.name || user.name;
+                document.getElementById('custPhone').innerText = p.phone || '9999999999';
+                
+                const addr = p.addressLine || '';
+                const city = p.city || '';
+                const state = p.state || '';
+                const pin = p.pincode || '';
+
+                if (!addr && !city) {
+                    document.getElementById('custAddress').innerHTML = '<span style="color: #ef4444;"><i class="fa-solid fa-circle-exclamation"></i> Address missing. Please update your profile.</span>';
+                } else {
+                    document.getElementById('custAddress').innerText = `${addr}, ${city}, ${state} - ${pin}`;
+                }
+            } catch (err) {
+                console.error("Profile Sync Error:", err);
+                document.getElementById('custAddress').innerText = "Error loading address.";
+            }
+        }
+        syncProfile();
 
         // Render Items in Summary
         function renderSummary() {
@@ -228,7 +254,7 @@
                     address: document.getElementById('custAddress').innerText
                 };
 
-                await apiCall('place-order', 'POST', payload);
+                await apiCall('orders', 'POST', payload);
 
                 alert(`🎉 Order Success!\n\nYour order for ${checkoutItems.length} items has been placed.\nPayment: Cash on Delivery.`);
                 localStorage.removeItem('checkoutSource');

@@ -55,7 +55,7 @@ async function searchProducts(query) {
         const pagination = document.getElementById('paginationContainer');
         if (pagination) pagination.style.display = 'none';
 
-        const data = await apiCall(`search-products?q=${encodeURIComponent(query)}`);
+        const data = await apiCall('products', 'GET', null, { q: query });
         const products = data.products || [];
         
         renderProducts(products);
@@ -67,7 +67,7 @@ async function searchProducts(query) {
 async function syncWishlist() {
     try {
         const data = await apiCall('wishlist');
-        const items = data.wishlist || [];
+        const items = data.products || [];
         wishlistIds = new Set(items.map(i => i.productId));
     } catch (err) {
         console.error("Sync Wishlist Error:", err);
@@ -157,6 +157,8 @@ function togglePaginationBtn() {
     }
 }
 
+const PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmMWY1ZjkiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5NGEzYjgiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+
 // 🖼️ Render Product Grid
 function renderProducts(products, targetId = 'productGrid', append = false) {
     const grid = document.getElementById(targetId);
@@ -178,8 +180,8 @@ function renderProducts(products, targetId = 'productGrid', append = false) {
                 </button>
                 
                 <div class="product-img-container">
-                    <img src="${p.imageUrl || '../../public/placeholder.png'}" 
-                         onerror="this.src='../../public/placeholder.png'"
+                    <img src="${p.imageUrl || PLACEHOLDER}" 
+                         onerror="this.onerror=null;this.src='${PLACEHOLDER}'"
                          class="product-img" alt="${p.name}">
                 </div>
 
@@ -245,25 +247,45 @@ function orderNow(pid) {
 }
 
 // 🔍 Search Logic
+let searchTimer;
+
+function initSearch() {
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            searchProducts();
+        }, 500);
+    });
+}
+
 async function searchProducts() {
-    const query = document.getElementById('searchInput').value.trim();
+    const input = document.getElementById('searchInput');
+    if (!input) return;
+    
+    const query = input.value.trim();
     if (query.length < 2) {
         if (query.length === 0) renderProducts(allProducts);
         return;
     }
 
     try {
-        const data = await apiCall('search-products', 'GET', null, { q: query });
+        const data = await apiCall('products', 'GET', null, { q: query });
         renderProducts(data.products || []);
     } catch (err) {
         console.error("Search Error:", err);
     }
 }
 
+// Initial call to bind search
+initSearch();
+
 // 🛒 Cart Logic
 async function addToCart(productId) {
     try {
-        await apiCall('add-to-cart', 'POST', { productId, quantity: 1 });
+        await apiCall('cart', 'POST', { productId, quantity: 1 });
         alert("Added to cart! 🛒");
     } catch (err) {
         alert("Error: " + err.message);
@@ -294,7 +316,9 @@ async function loadCart() {
 
             return `
                 <div class="list-item" style="display:flex; align-items:center; gap:1.5rem; background:white; padding:1.5rem; border-radius:12px; border:1px solid #f1f5f9; margin-bottom:1.5rem;">
-                    <img src="${item.imageUrl || '../../public/placeholder.png'}" style="width:80px; height:80px; object-fit:contain; background:#f8fafc; border-radius:12px; border:1px solid #f1f5f9;">
+                    <img src="${item.imageUrl || PLACEHOLDER}" 
+                         onerror="this.onerror=null;this.src='${PLACEHOLDER}'"
+                         style="width:80px; height:80px; object-fit:contain; background:#f8fafc; border-radius:12px; border:1px solid #f1f5f9;">
                     
                     <div style="flex:1;">
                         <h3 style="margin:0 0 5px; font-size:1.15rem; color:#1e293b;">${item.name}</h3>
@@ -342,7 +366,7 @@ async function loadCart() {
 async function removeCart(productId) {
     if (!confirm("Remove this item from your cart?")) return;
     try {
-        await apiCall('remove-from-cart', 'DELETE', { productId });
+        await apiCall('cart', 'DELETE', { productId });
         loadCart();
     } catch (err) {
         alert("Error: " + err.message);
@@ -364,10 +388,12 @@ function checkoutCart() {
 
 // ❤️ Wishlist Logic
 async function toggleWishlist(productId, btn) {
+    console.log("Toggling Wishlist for Product ID:", productId);
     try {
-        const res = await apiCall('add-to-wishlist', 'POST', { productId });
+        const res = await apiCall('wishlist', 'POST', { productId });
+        console.log("Wishlist API Response:", res);
         
-        if (res.action === 'added') {
+        if (res.wishlisted) {
             wishlistIds.add(productId);
             if (btn) btn.classList.add('active');
         } else {
@@ -388,7 +414,7 @@ async function loadWishlist() {
         const grid = document.getElementById('wishlistGrid');
         grid.innerHTML = '<p>Loading wishlist...</p>';
         const data = await apiCall('wishlist');
-        renderProducts(data.wishlist || [], 'wishlistGrid');
+        renderProducts(data.products || [], 'wishlistGrid');
     } catch (err) {
         console.error("Load Wishlist Error:", err);
     }
@@ -399,7 +425,7 @@ async function loadOrders() {
     try {
         const container = document.getElementById('orderHistory');
         container.innerHTML = '<p>Loading orders...</p>';
-        const data = await apiCall('my-orders');
+        const data = await apiCall('orders');
         const orders = data.orders || [];
 
         if (orders.length === 0) {
@@ -419,12 +445,24 @@ async function loadOrders() {
                     </span>
                 </div>
                 <div style="display:flex; gap:1.5rem; align-items:center;">
-                    <img src="${order.imageUrl || '../../public/placeholder.png'}" style="width:60px; height:60px; object-fit:contain;">
+                    <img src="${order.imageUrl || PLACEHOLDER}" 
+                         onerror="this.onerror=null;this.src='${PLACEHOLDER}'"
+                         style="width:60px; height:60px; object-fit:contain;">
                     <div style="flex:1;">
                         <h4 style="margin:0; font-size:1.05rem;">${order.productName}</h4>
                         <p style="margin:5px 0; color:#64748b; font-size:0.9rem;">Ordered on: ${new Date(order.createdAt).toLocaleDateString()}</p>
+                        <div style="display:flex; gap:15px; margin-top:8px; font-size:0.85rem; color:#64748b;">
+                            <span>Qty: <strong style="color:#1e293b;">${order.quantity}</strong></span>
+                            <span>Price: <strong style="color:#1e293b;">₹${order.price}</strong></span>
+                        </div>
                     </div>
                     <div style="text-align:right;">
+                        ${order.discount > 0 ? `
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-bottom: 4px;">
+                                <span style="text-decoration: line-through; color: #94a3b8; font-size: 0.85rem;">₹${order.originalPrice || ''}</span>
+                                <span style="background: #f0fdf4; color: #16a34a; font-size: 0.75rem; padding: 1px 6px; border-radius: 4px; font-weight: 700;">${order.discount}% OFF</span>
+                            </div>
+                        ` : ''}
                         <p style="margin:0; font-weight:800; font-size:1.1rem; color:#0f172a;">₹${order.totalAmount}</p>
                         ${order.reviewed ? `
                             <div style="margin-top: 10px; background: #f0fdf4; color: #16a34a; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px;">
@@ -432,7 +470,7 @@ async function loadOrders() {
                             </div>
                         ` : (order.status === 'Delivered' ? `
                             <button class="btn btn-outline btn-sm" style="margin-top: 10px; border-color: #fbbf24; color: #d97706;" 
-                                    onclick="openReviewPage('${order.productId}')">
+                                    onclick="openReviewPage('${order.productId}', '${order.orderId}')">
                                 ⭐ Rate & Review
                             </button>
                         ` : '')}
@@ -445,8 +483,8 @@ async function loadOrders() {
     }
 }
 
-function openReviewPage(productId) {
-    window.location.href = `review.html?productId=${productId}`;
+function openReviewPage(productId, orderId) {
+    window.location.href = `review.html?productId=${productId}&orderId=${orderId}`;
 }
 
 // 👤 Profile Logic

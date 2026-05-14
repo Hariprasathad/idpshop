@@ -86,7 +86,7 @@ async function addProduct() {
             imageUrl: imageUrl // ⭐ Use the S3 URL
         };
 
-        const res = await apiCall('add-product', 'POST', body);
+        const res = await apiCall('seller/products', 'POST', body);
         alert(res.message || "Product added successfully!");
         
         resetForm();
@@ -150,7 +150,7 @@ async function updateProduct() {
             imageUrl: imageUrl
         };
 
-        const res = await apiCall('update-product', 'PUT', body);
+        const res = await apiCall('seller/products', 'PUT', body);
         console.log("UPDATE RESPONSE:", res);
         alert(res.message || "Product updated successfully!");
 
@@ -173,7 +173,7 @@ function resetForm() {
 // ===== LOAD PRODUCTS =====
 async function loadProducts() {
     try {
-        const data = await apiCall('seller-products');
+        const data = await apiCall('seller/products');
         const productTable = document.getElementById("productTable");
         let html = "";
 
@@ -215,7 +215,7 @@ async function deleteProduct(id) {
     if (!confirm("Are you sure you want to delete this product?")) return;
 
     try {
-        await apiCall('delete-product', 'DELETE', { productId: id });
+        const res = await apiCall('seller/products', 'DELETE', { productId: id });
         loadProducts();
         loadStats();
     } catch (err) {
@@ -226,7 +226,7 @@ async function deleteProduct(id) {
 // ===== LOAD ORDERS =====
 async function loadOrders() {
     try {
-        const data = await apiCall('seller-orders');
+        const data = await apiCall('seller/orders');
         const ordersTable = document.getElementById("ordersTable");
         const recentOrders = document.getElementById("recentOrders");
         
@@ -281,7 +281,7 @@ function actionBtn(o) {
 // ===== UPDATE STATUS =====
 async function updateStatus(orderId, status) {
     try {
-        await apiCall('update-order-status', 'PUT', { orderId, status });
+        const res = await apiCall('seller/orders', 'PUT', { orderId, status });
         loadOrders();
         loadStats();
     } catch (err) {

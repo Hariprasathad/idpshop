@@ -27,6 +27,17 @@ def response(status, body):
 
 def lambda_handler(event, context):
     try:
+        # ============================================
+        # 🌐 METHOD (Robust Extraction)
+        # ============================================
+        method = event.get("httpMethod")
+        if not method:
+            method = event.get("requestContext", {}).get("http", {}).get("method")
+
+        # 🛡️ OPTIONS PREFLIGHT
+        if method == "OPTIONS":
+            return response(200, {"message": "CORS Preflight OK"})
+
         # 🔐 Auth
         headers = event.get('headers', {})
         token = headers.get('Authorization') or headers.get('authorization')

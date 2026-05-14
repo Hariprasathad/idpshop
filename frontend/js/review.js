@@ -4,9 +4,10 @@ if (!user) window.location.href = '../auth/login.html';
 
 const params = new URLSearchParams(window.location.search);
 const productId = params.get('productId');
+const orderId = params.get('orderId');
 
-if (!productId) {
-    alert("Invalid Product");
+if (!productId || !orderId) {
+    alert("Invalid Review Request");
     window.location.href = 'dashboard.html';
 }
 
@@ -26,11 +27,12 @@ async function submitReview() {
     try {
         const payload = {
             productId,
+            orderId,
             rating: parseInt(rating),
             comment
         };
 
-        await apiCall('add-review', 'POST', payload);
+        await apiCall('reviews', 'POST', payload);
 
         alert("🎉 Thank you! Your review has been added.");
         window.location.href = 'dashboard.html';

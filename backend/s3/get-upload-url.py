@@ -23,14 +23,15 @@ def lambda_handler(event, context):
             'put_object',
             Params={
                 'Bucket': BUCKET,
-                'Key': file_name,
+                'Key': f"images/{file_name}",
                 'ContentType': content_type
             },
             ExpiresIn=300
         )
 
-        # Use a consistent regional URL
-        image_url = f"https://{BUCKET}.s3.ap-southeast-1.amazonaws.com/{file_name}"
+        # Use CloudFront domain for images
+        CLOUDFRONT_DOMAIN = "d3r1l4tg7odjwk.cloudfront.net" 
+        image_url = f"https://{CLOUDFRONT_DOMAIN}/images/{file_name}"
 
         return {
             "statusCode": 200,
