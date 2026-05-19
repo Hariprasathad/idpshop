@@ -1,6 +1,7 @@
 import json
 import jwt
 from test_helper import assert_equal, mock_orders_table, mock_products_table, mock_reviews_table
+from backend.orders import order_handler
 
 SECRET_KEY = "test_secret_key"
 
@@ -9,8 +10,6 @@ def get_auth_headers(user_id):
     return {"Authorization": f"Bearer {token}"}
 
 def test_get_orders_empty():
-    import order_handler
-    
     mock_orders_table.scan.return_value = {"Items": []}
     
     event = {
@@ -24,8 +23,6 @@ def test_get_orders_empty():
     assert_equal(body["count"], 0)
 
 def test_get_orders_list():
-    import order_handler
-    
     mock_orders = [
         {
             "orderId": "o1",
@@ -57,8 +54,6 @@ def test_get_orders_list():
     assert_equal(body["orders"][0]["reviewed"], False)
 
 def test_create_order_insufficient_stock():
-    import order_handler
-    
     mock_product = {
         "productId": "p1",
         "name": "Wireless Bluetooth Headphones",
@@ -86,8 +81,6 @@ def test_create_order_insufficient_stock():
     assert_equal(body["message"], "Not enough stock for Wireless Bluetooth Headphones")
 
 def test_create_order_success():
-    import order_handler
-    
     mock_product = {
         "productId": "p1",
         "name": "Wireless Bluetooth Headphones",

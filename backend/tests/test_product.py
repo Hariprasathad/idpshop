@@ -1,9 +1,8 @@
 import json
 from test_helper import assert_equal, mock_products_table, mock_reviews_table
+from backend.product import product_handler
 
 def test_get_products_list():
-    import product_handler
-    
     # Mock products scan response
     mock_products = [
         {
@@ -52,8 +51,6 @@ def test_get_products_list():
     assert_equal(body["products"][0]["rating"], 4.5) # (5+4)/2
 
 def test_search_products():
-    import product_handler
-    
     mock_products = [
         {
             "productId": "p1",

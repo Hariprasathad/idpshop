@@ -1,6 +1,7 @@
 import json
 import jwt
 from test_helper import assert_equal, mock_cart_table, mock_products_table
+from backend.cart import cart_handler
 
 SECRET_KEY = "test_secret_key"
 
@@ -9,8 +10,6 @@ def get_auth_headers(user_id):
     return {"Authorization": f"Bearer {token}"}
 
 def test_get_cart_empty():
-    import cart_handler
-    
     mock_cart_table.scan.return_value = {"Items": []}
     
     event = {
@@ -24,8 +23,6 @@ def test_get_cart_empty():
     assert_equal(body["count"], 0)
 
 def test_add_to_cart_success():
-    import cart_handler
-    
     mock_product = {
         "productId": "p1",
         "name": "Wireless Bluetooth Headphones",
@@ -54,8 +51,6 @@ def test_add_to_cart_success():
     assert_equal(body["cart"]["sellingPrice"], 1600)
 
 def test_add_to_cart_limit_reached():
-    import cart_handler
-    
     mock_product = {
         "productId": "p1",
         "name": "Wireless Bluetooth Headphones",
@@ -82,8 +77,6 @@ def test_add_to_cart_limit_reached():
     assert_equal(body["message"], "Cart limit reached")
 
 def test_remove_from_cart():
-    import cart_handler
-    
     mock_cart_table.delete_item.return_value = {}
     
     event = {

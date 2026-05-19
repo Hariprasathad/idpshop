@@ -10,6 +10,11 @@ sys.path.append(os.path.join(backend_dir, 'product'))
 sys.path.append(os.path.join(backend_dir, 'orders'))
 sys.path.append(os.path.join(backend_dir, 'cart'))
 
+# Add the project root to sys.path so package-level imports like "from backend.product import product_handler" work
+project_root = os.path.abspath(os.path.join(backend_dir, '..'))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 # Set environment variables for handlers
 os.environ['SECRET_KEY'] = 'test_secret_key'
 os.environ['USERS_TABLE'] = 'test-users'
