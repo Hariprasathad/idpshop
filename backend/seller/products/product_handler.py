@@ -233,6 +233,9 @@ def lambda_handler(event, context):
                 "name":
                 body.get("name"),
 
+                "category":
+                body.get("category", ""),
+
                 "price":
                 int(body.get("price") or 0),
 
@@ -335,6 +338,8 @@ def lambda_handler(event, context):
             fields = [
 
                 "name",
+
+                "category",
 
                 "price",
 

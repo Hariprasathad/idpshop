@@ -8,6 +8,7 @@ def test_get_products_list():
         {
             "productId": "p1",
             "name": "Product 1",
+            "category": "Electronics",
             "price": 100,
             "discount": 10,
             "stock": 5,
@@ -17,6 +18,7 @@ def test_get_products_list():
         {
             "productId": "p2",
             "name": "Product 2",
+            "category": "Home",
             "price": 200,
             "discount": 0,
             "stock": 0,  # Out of stock, should be hidden!
@@ -47,6 +49,7 @@ def test_get_products_list():
     # Only Product 1 should be visible (Product 2 is out of stock)
     assert_equal(body["count"], 1)
     assert_equal(body["products"][0]["productId"], "p1")
+    assert_equal(body["products"][0]["category"], "Electronics")
     assert_equal(body["products"][0]["sellingPrice"], 90) # 100 - 10%
     assert_equal(body["products"][0]["rating"], 4.5) # (5+4)/2
 

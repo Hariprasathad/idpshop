@@ -78,6 +78,7 @@ async function addProduct() {
         // STEP 3: Save product with the permanent image URL
         const body = {
             name: document.getElementById("pName").value.trim(),
+            category: document.getElementById("pCategory").value,
             price: Number(document.getElementById("pPrice").value),
             discount: Number(document.getElementById("pDiscount").value),
             description: document.getElementById("pDescription").value.trim(),
@@ -106,6 +107,7 @@ function editProduct(id) {
     currentProduct = p;
 
     document.getElementById("pName").value = p.name;
+    document.getElementById("pCategory").value = p.category || "Electronics";
     document.getElementById("pPrice").value = p.price;
     document.getElementById("pDiscount").value = p.discount || 0;
     document.getElementById("pDescription").value = p.description;
@@ -142,6 +144,7 @@ async function updateProduct() {
         const body = {
             productId: currentProduct.productId,
             name: document.getElementById("pName").value.trim(),
+            category: document.getElementById("pCategory").value,
             price: Number(document.getElementById("pPrice").value),
             discount: Number(document.getElementById("pDiscount").value),
             description: document.getElementById("pDescription").value.trim(),
@@ -186,6 +189,7 @@ async function loadProducts() {
             html += `
                 <tr>
                     <td><div style="font-weight: 600;">${p.name}</div></td>
+                    <td><span style="font-weight: 500; color: var(--text-muted); font-size: 0.9rem;">${p.category || 'N/A'}</span></td>
                     <td>₹ ${p.price}</td>
                     <td><span style="color: var(--secondary); font-weight: 600;">${p.discount}% OFF</span></td>
                     <td style="font-weight: 700; color: var(--secondary);">₹ ${selling.toFixed(0)}</td>
@@ -204,7 +208,7 @@ async function loadProducts() {
             `;
         });
 
-        productTable.innerHTML = html || '<tr><td colspan="8" style="text-align:center;">No products found</td></tr>';
+        productTable.innerHTML = html || '<tr><td colspan="9" style="text-align:center;">No products found</td></tr>';
     } catch (err) {
         console.error("Failed to load products:", err);
     }

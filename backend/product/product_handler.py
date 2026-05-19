@@ -139,6 +139,9 @@ def format_product(item):
         "name":
         item.get("name"),
 
+        "category":
+        item.get("category", ""),
+
         "description":
         item.get("description", ""),
 
