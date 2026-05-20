@@ -59,9 +59,6 @@ IDPShop is a cloud-native e-commerce application where:
 | API Gateway | REST APIs |
 | DynamoDB | NoSQL Database |
 | S3 | Frontend Hosting + Product Images |
-| CloudFront | CDN Delivery |
-| IAM | Access Management |
-| CloudWatch | Logs & Monitoring |
 
 ---
 
