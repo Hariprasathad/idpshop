@@ -16,7 +16,7 @@ IDPShop is a cloud-native e-commerce application where:
 
 ---
 
-# 🏗️ Architecture Diagram
+# 🏗️ Architecture
 
 ![alt image](image.png)
 
