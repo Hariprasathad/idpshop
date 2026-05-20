@@ -34,7 +34,7 @@
                 <input type="password" id="password" class="auth-input" placeholder="••••••••" required>
             </div>
 
-            <button type="submit" class="auth-submit-btn">Sign In</button>
+            <button type="submit" id="loginBtn" class="auth-submit-btn">Login</button>
 
         </form>
 
@@ -50,9 +50,18 @@
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = true;
+            loginBtn.innerText = "Loading...";
+            
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            await login(email, password);
+            try {
+                await login(email, password);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerText = "Login";
+            }
         });
     </script>
 

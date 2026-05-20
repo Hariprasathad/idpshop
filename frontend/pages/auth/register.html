@@ -45,7 +45,7 @@
                 <input type="password" id="confirmPassword" class="auth-input" placeholder="••••••••" required>
             </div>
 
-            <button type="submit" class="auth-submit-btn">Register</button>
+            <button type="submit" id="registerBtn" class="auth-submit-btn">Register</button>
 
         </form>
 
@@ -62,6 +62,7 @@
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            const registerBtn = document.getElementById('registerBtn');
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -72,7 +73,15 @@
                 return;
             }
 
-            await register(name, email, password, 'user');
+            registerBtn.disabled = true;
+            registerBtn.innerText = "Loading...";
+
+            try {
+                await register(name, email, password, 'user');
+            } finally {
+                registerBtn.disabled = false;
+                registerBtn.innerText = "Register";
+            }
         });
     </script>
 

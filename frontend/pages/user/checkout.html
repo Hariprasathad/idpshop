@@ -242,16 +242,36 @@
 
         async function confirmOrder() {
             const btn = document.querySelector('.btn-primary');
-            btn.innerText = "Placing Order...";
+            btn.innerText = "Checking profile...";
             btn.disabled = true;
 
             try {
+                // Fetch latest profile from DB
+                const profileData = await apiCall('profile');
+                const profile = profileData.profile || {};
+
+                // Validate profile fields
+                if (
+                    !profile.phone ||
+                    !profile.addressLine ||
+                    !profile.city ||
+                    !profile.pincode
+                ) {
+                    alert("Please complete your profile before placing order");
+                    window.location.href = "edit-profile.html";
+                    return;
+                }
+
+                // If valid, proceed to place order
+                btn.innerText = "Placing Order...";
+
+                const addressStr = `${profile.addressLine}, ${profile.city}, ${profile.state || ''} - ${profile.pincode}`;
                 const payload = {
                     items: checkoutItems.map(i => ({
                         productId: i.productId,
                         quantity: i.quantity || 1
                     })),
-                    address: document.getElementById('custAddress').innerText
+                    address: addressStr
                 };
 
                 await apiCall('orders', 'POST', payload);
