@@ -50,18 +50,9 @@
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const loginBtn = document.getElementById('loginBtn');
-            loginBtn.disabled = true;
-            loginBtn.innerText = "Loading...";
-            
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            try {
-                await login(email, password);
-            } finally {
-                loginBtn.disabled = false;
-                loginBtn.innerText = "Login";
-            }
+            await login(email, password);
         });
     </script>
 

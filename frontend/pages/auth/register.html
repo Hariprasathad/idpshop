@@ -62,7 +62,6 @@
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const registerBtn = document.getElementById('registerBtn');
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -73,15 +72,7 @@
                 return;
             }
 
-            registerBtn.disabled = true;
-            registerBtn.innerText = "Loading...";
-
-            try {
-                await register(name, email, password, 'user');
-            } finally {
-                registerBtn.disabled = false;
-                registerBtn.innerText = "Register";
-            }
+            await register(name, email, password, 'user');
         });
     </script>
 

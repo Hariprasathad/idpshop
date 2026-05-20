@@ -19,6 +19,11 @@ function clearAuth() {
 }
 
 async function register(name, email, password, role = 'user') {
+    const registerBtn = document.getElementById("registerBtn") || document.querySelector(".auth-submit-btn");
+    if (registerBtn) {
+        registerBtn.disabled = true;
+        registerBtn.innerText = "Loading...";
+    }
     try {
         const result = await apiCall('register', 'POST', {
             name,
@@ -32,10 +37,19 @@ async function register(name, email, password, role = 'user') {
 
     } catch (error) {
         alert(error.message);
+        if (registerBtn) {
+            registerBtn.disabled = false;
+            registerBtn.innerText = "Register";
+        }
     }
 }
 
 async function login(email, password) {
+    const loginBtn = document.getElementById("loginBtn") || document.querySelector(".auth-submit-btn");
+    if (loginBtn) {
+        loginBtn.disabled = true;
+        loginBtn.innerText = "Loading...";
+    }
     try {
         const result = await apiCall('login', 'POST', {
             email,
@@ -54,6 +68,10 @@ async function login(email, password) {
 
     } catch (error) {
         alert(error.message);
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.innerText = "Login";
+        }
     }
 }
 
