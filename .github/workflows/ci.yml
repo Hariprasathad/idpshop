@@ -1,0 +1,41 @@
+name: IDPShop CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: |
+          pip install boto3 pyjwt bcrypt
+
+      - name: Python Syntax Check
+        run: |
+          python -m py_compile backend/**/*.py
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: terraform
