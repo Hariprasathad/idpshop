@@ -48,9 +48,6 @@ def lambda_handler(event, context):
             return response(400, {'message': 'Missing fields'})
 
         email = email.lower().strip()
-
-        
-        # CORRECTED: Use GSI (email-index) to find user by email
         db_response = table.query(
             IndexName='email-index',
             KeyConditionExpression=Key('email').eq(email)

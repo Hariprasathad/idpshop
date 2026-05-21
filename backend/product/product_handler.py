@@ -265,6 +265,12 @@ def lambda_handler(event, context):
                     format_product(item)
                 )
 
+            products.sort(
+                key=lambda x:
+                x.get("createdAt", ""),
+                reverse=True
+            )
+
 
             return response(200, {
 
@@ -323,6 +329,12 @@ def lambda_handler(event, context):
             products.append(
                 format_product(item)
             )
+
+        products.sort(
+            key=lambda x:
+            x.get("createdAt", ""),
+            reverse=True
+        )
 
 
         # 🔑 NEXT PAGE

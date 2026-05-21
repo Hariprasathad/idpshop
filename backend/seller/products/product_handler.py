@@ -204,6 +204,13 @@ def lambda_handler(event, context):
             )
 
 
+            items.sort(
+                key=lambda x:
+                x.get("createdAt", ""),
+                reverse=True
+            )
+
+
             return response(200, {
 
                 "products":
