@@ -25,7 +25,7 @@ function generateStars(rating) {
 document.addEventListener('DOMContentLoaded', async () => {
     updateProfileUI();
     await syncWishlist();
-    loadAllProducts();
+    loadProducts();
 
     // 🔍 Backend Search Logic
     const searchInput = document.getElementById('searchInput');
@@ -37,32 +37,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             debounceTimer = setTimeout(() => {
                 if (query.length === 0) {
-                    loadAllProducts();
+                    loadProducts();
                 } else if (query.length >= 2) {
-                    searchProducts(query);
+                    loadProducts(query);
                 }
             }, 500); // Debounce for 500ms
         });
     }
 });
-
-async function searchProducts(query) {
-    try {
-        const grid = document.getElementById('productGrid');
-        grid.innerHTML = '<div class="loading">Searching products...</div>';
-        
-        // Hide pagination during search
-        const pagination = document.getElementById('paginationContainer');
-        if (pagination) pagination.style.display = 'none';
-
-        const data = await apiCall('products', 'GET', null, { q: query });
-        const products = data.products || [];
-        
-        renderProducts(products);
-    } catch (err) {
-        console.error("Search Error:", err);
-    }
-}
 
 async function syncWishlist() {
     try {
@@ -105,49 +87,57 @@ function editProfile() {
     window.location.href = 'edit-profile.html';
 }
 
-// 📦 Load Products from API
-async function loadAllProducts() {
-    try {
+// 📦 Load Products from API (Unified for Normal & Search Pagination)
+async function loadProducts(search = "", isLoadMore = false) {
+    const grid = document.getElementById('productGrid');
+    if (!isLoadMore) {
         currentLastKey = null; // Reset pagination
-        const grid = document.getElementById('productGrid');
         grid.innerHTML = '<div class="loading">Loading products...</div>';
+    }
 
-        const data = await apiCall('products', 'GET', null, { limit: 8 });
-        allProducts = data.products || [];
+    const btn = document.getElementById('loadMoreBtn');
+    if (isLoadMore && btn) {
+        btn.innerText = "Loading...";
+        btn.disabled = true;
+    }
+
+    try {
+        const params = { limit: 8 };
+        if (search) {
+            params.q = search;
+        }
+        if (isLoadMore && currentLastKey) {
+            params.lastKey = currentLastKey;
+        }
+
+        const data = await apiCall('products', 'GET', null, params);
+        const newProducts = data.products || [];
+
+        if (isLoadMore) {
+            allProducts = [...allProducts, ...newProducts];
+            renderProducts(newProducts, 'productGrid', true);
+        } else {
+            allProducts = newProducts;
+            renderProducts(allProducts);
+        }
+
         currentLastKey = data.lastKey;
-
-        renderProducts(allProducts);
         togglePaginationBtn();
     } catch (err) {
         console.error("Load Products Error:", err);
+    } finally {
+        if (isLoadMore && btn) {
+            btn.innerText = "Load More Products";
+            btn.disabled = false;
+        }
     }
 }
 
 async function loadMoreProducts() {
-    if (!currentLastKey) return;
-    
-    const btn = document.getElementById('loadMoreBtn');
-    btn.innerText = "Loading...";
-    btn.disabled = true;
-
-    try {
-        const data = await apiCall('products', 'GET', null, { 
-            limit: 8, 
-            lastKey: currentLastKey 
-        });
-        
-        const newProducts = data.products || [];
-        allProducts = [...allProducts, ...newProducts];
-        currentLastKey = data.lastKey;
-
-        renderProducts(newProducts, 'productGrid', true);
-        togglePaginationBtn();
-    } catch (err) {
-        console.error("Load More Error:", err);
-    } finally {
-        btn.innerText = "Load More Products";
-        btn.disabled = false;
-    }
+    const searchInput = document.getElementById('searchInput');
+    const query = searchInput ? searchInput.value.trim() : "";
+    const searchQuery = query.length >= 2 ? query : "";
+    await loadProducts(searchQuery, true);
 }
 
 function togglePaginationBtn() {
@@ -246,41 +236,7 @@ function orderNow(pid) {
     window.location.href = 'checkout.html';
 }
 
-// 🔍 Search Logic
-let searchTimer;
-
-function initSearch() {
-    const searchInput = document.getElementById('searchInput');
-    if (!searchInput) return;
-
-    searchInput.addEventListener('input', () => {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => {
-            searchProducts();
-        }, 500);
-    });
-}
-
-async function searchProducts() {
-    const input = document.getElementById('searchInput');
-    if (!input) return;
-    
-    const query = input.value.trim();
-    if (query.length < 2) {
-        if (query.length === 0) renderProducts(allProducts);
-        return;
-    }
-
-    try {
-        const data = await apiCall('products', 'GET', null, { q: query });
-        renderProducts(data.products || []);
-    } catch (err) {
-        console.error("Search Error:", err);
-    }
-}
-
-// Initial call to bind search
-initSearch();
+// (Old search logic removed; unified within loadProducts and DOMContentLoaded listener)
 
 // 🛒 Cart Logic
 async function addToCart(productId) {
@@ -371,10 +327,6 @@ async function removeCart(productId) {
     } catch (err) {
         alert("Error: " + err.message);
     }
-}
-
-async function updateCartQty(cartId, qty) {
-    loadCart(); 
 }
 
 function checkoutCart() {
@@ -518,7 +470,7 @@ function switchTab(tabId) {
     }
 
     // Data Loaders
-    if (tabId === 'dashboard') loadAllProducts();
+    if (tabId === 'dashboard') loadProducts();
     if (tabId === 'cart') loadCart();
     if (tabId === 'wishlist') loadWishlist();
     if (tabId === 'orders') loadOrders();

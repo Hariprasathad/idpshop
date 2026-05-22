@@ -68,12 +68,7 @@
 
 
 
-/* Content Area */
-.seller-content-area {
-    flex: 1;
-    padding: 2rem;
-    overflow-y: auto;
-}
+
 
 /* Stats Grid */
 .stats-grid {
@@ -205,23 +200,7 @@
     color: #075985;
 }
 
-/* Analytics */
-.analytics-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 1.5rem;
-}
 
-.chart-placeholder {
-    height: 300px;
-    background: var(--background);
-    border-radius: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    border: 2px dashed var(--border);
-}
 
 /* 🚨 LOGOUT BUTTON OVERRIDE (CRITICAL) */
 aside.left-sidebar a.sidebar-logout {

@@ -3,7 +3,7 @@ import boto3
 import jwt
 import os
 from boto3.dynamodb.conditions import Attr
-from decimal import Decimal
+
 
 dynamodb = boto3.resource('dynamodb')
 

@@ -26,36 +26,25 @@ reviews_table = dynamodb.Table(
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 
-
 # ============================================
 # 🔁 Decimal Convert
 # ============================================
 
 def convert_decimal(obj):
-
     if isinstance(obj, list):
-
         return [
             convert_decimal(i)
             for i in obj
         ]
-
-
     elif isinstance(obj, dict):
-
         return {
-
             k: convert_decimal(v)
-
             for k, v in obj.items()
         }
-
-
     elif isinstance(obj, Decimal):
         if obj % 1 == 0:
             return int(obj)
         return float(obj)
-
     elif isinstance(obj, str) and "hariprasath-product-images.s3" in obj:
         # Smart Rewrite: Prevent double "/images/images/" paths
         parts = obj.split("amazonaws.com/")
@@ -67,13 +56,11 @@ def convert_decimal(obj):
 
     return obj
 
-
 # ============================================
 # 📦 Response
 # ============================================
 
 def response(status, body):
-
     return {
         "statusCode": status,
         "headers": {
@@ -85,13 +72,11 @@ def response(status, body):
         "body": json.dumps(body)
     }
 
-
 # ============================================
 # 🔐 JWT AUTH
 # ============================================
 
 def get_user_id(event):
-
     headers = event.get("headers", {})
 
     token = (
@@ -100,51 +85,36 @@ def get_user_id(event):
         headers.get("authorization")
     )
 
-
     if not token:
-
         return None
-
 
     token = token.replace("Bearer ", "")
 
-
     decoded = jwt.decode(
-
         token,
-
         SECRET_KEY,
-
         algorithms=["HS256"]
     )
 
-
     return decoded.get("userId")
-
 
 # ============================================
 # 🚀 Lambda Handler
 # ============================================
 
 def lambda_handler(event, context):
-
     try:
-
         # ============================================
         # 🔐 AUTH
         # ============================================
 
         user_id = get_user_id(event)
 
-
         if not user_id:
-
             return response(401, {
-
                 "message":
                 "Unauthorized"
             })
-
 
         # ============================================
         # 🌐 METHOD
@@ -157,52 +127,39 @@ def lambda_handler(event, context):
         if not method:
             method = event.get("requestContext", {}).get("http", {}).get("method")
 
-
         # ============================================
         # ❤️ GET WISHLIST
         # ============================================
 
         if method == "GET":
-
             result = wishlist_table.scan(
-
                 FilterExpression=
                 "userId = :uid",
-
                 ExpressionAttributeValues={
-
                     ":uid":
                     user_id
                 }
             )
-
 
             wishlist_items = result.get(
                 "Items",
                 []
             )
 
-
             products = []
-
 
             # 📦 GET PRODUCT DATA
             for item in wishlist_items:
-
                 product_result = products_table.get_item(
-
                     Key={
-
                         "productId":
                         item["productId"]
                     }
                 )
 
-
                 product = product_result.get(
                     "Item"
                 )
-
 
                 if product:
                     product["wishlistId"] = item["wishlistId"]
@@ -230,23 +187,17 @@ def lambda_handler(event, context):
 
                     products.append(product)
 
-
             return response(200, {
-
                 "products":
                 convert_decimal(products),
-
                 "count":
                 len(products)
             })
 
-
         # ============================================
         # ❤️ ADD WISHLIST
         # ============================================
-
         elif method == "POST":
-
             body = json.loads(
                 event.get("body", "{}")
             )
@@ -255,128 +206,89 @@ def lambda_handler(event, context):
                 "productId"
             )
 
-
             if not product_id:
-
                 return response(400, {
-
                     "message":
                     "productId required"
                 })
 
-
             # 🔍 CHECK DUPLICATE
             existing = wishlist_table.scan(
-
                 FilterExpression=
                 "userId = :uid AND productId = :pid",
-
                 ExpressionAttributeValues={
-
                     ":uid":
                     user_id,
-
                     ":pid":
                     product_id
                 }
             )
 
-
             # ❤️ REMOVE IF EXISTS
             if existing.get("Items"):
-
                 existing_item = existing[
                     "Items"
                 ][0]
 
-
                 wishlist_table.delete_item(
-
                     Key={
-
                         "wishlistId":
                         existing_item["wishlistId"]
                     }
                 )
 
-
                 return response(200, {
-
                     "message":
                     "Removed from wishlist",
-
                     "wishlisted":
                     False
                 })
 
-
             # ❤️ ADD NEW
             wishlist_item = {
-
                 "wishlistId":
                 str(uuid.uuid4()),
-
                 "userId":
                 user_id,
-
                 "productId":
                 product_id,
-
                 "createdAt":
                 datetime.utcnow().isoformat()
             }
-
 
             wishlist_table.put_item(
                 Item=wishlist_item
             )
 
-
             return response(201, {
-
                 "message":
                 "Added to wishlist",
-
                 "wishlisted":
                 True
             })
-
 
         # ============================================
         # ❌ INVALID METHOD
         # ============================================
 
         return response(405, {
-
             "message":
             "Method not allowed"
         })
-
-
     except jwt.ExpiredSignatureError:
-
         return response(401, {
-
             "message":
             "Token expired"
         })
-
-
     except jwt.InvalidTokenError:
-
         return response(401, {
-
             "message":
             "Invalid token"
         })
-
-
     except Exception as e:
-
         print("Wishlist Handler Error:", str(e))
 
         return response(500, {
-
             "error":
             str(e)
         })

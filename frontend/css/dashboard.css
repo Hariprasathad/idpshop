@@ -23,62 +23,6 @@
     }
 }
 
-/* Action Buttons (Block, Activate, etc.) */
-.action-btn {
-    background: none;
-    border: 1px solid currentColor;
-    padding: 0.4rem 1rem;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
-}
-
-.action-btn:hover {
-    opacity: 0.85;
-    transform: translateY(-1px);
-}
-
-.action-btn-block {
-    background: #fef2f2;
-    color: #dc2626;
-    border-color: #fecaca;
-}
-
-.action-btn-block:hover {
-    background: #dc2626;
-    color: white;
-    border-color: #dc2626;
-}
-
-.action-btn-activate {
-    background: #f0fdf4;
-    color: #16a34a;
-    border-color: #bbf7d0;
-}
-
-.action-btn-activate:hover {
-    background: #16a34a;
-    color: white;
-    border-color: #16a34a;
-}
-
-/* Status Badges */
-.status-blocked {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-/* Admin Badge */
-.admin-badge {
-    font-weight: 700;
-    color: #ef4444;
-    border-left: 2px solid var(--border);
-    padding-left: 1rem;
-    margin-left: 0.5rem;
-}
 
 /* Logout Link */
 .sidebar-logout {
