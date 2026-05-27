@@ -450,9 +450,6 @@ async function loadProfile() {
     }
 }
 
-function editProfile() {
-    window.location.href = 'edit-profile.html';
-}
 
 // 📑 Tab Management
 function switchTab(tabId) {
@@ -479,7 +476,7 @@ function switchTab(tabId) {
 
 function logout() {
     if (confirm("Are you sure you want to logout?")) {
-        localStorage.clear();
+        clearAuth();
         window.location.href = '../auth/login.html';
     }
 }
