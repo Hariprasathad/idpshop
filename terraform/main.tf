@@ -250,8 +250,8 @@ resource "aws_lambda_function" "auth_register" {
   role             = aws_iam_role.lambda_exec.arn
   layers           = [aws_lambda_layer_version.auth_layer.arn]
   environment { variables = { USERS_TABLE = aws_dynamodb_table.users.name, FRONTEND_URL = var.frontend_url } }
-  timeout          = 30
-  memory_size      = 256
+  timeout     = 30
+  memory_size = 256
 }
 
 resource "aws_lambda_function" "auth_login" {
@@ -263,8 +263,8 @@ resource "aws_lambda_function" "auth_login" {
   role             = aws_iam_role.lambda_exec.arn
   layers           = [aws_lambda_layer_version.auth_layer.arn]
   environment { variables = { USERS_TABLE = aws_dynamodb_table.users.name, SECRET_KEY = var.jwt_secret, FRONTEND_URL = var.frontend_url } }
-  timeout          = 30
-  memory_size      = 256
+  timeout     = 30
+  memory_size = 256
 }
 
 resource "aws_lambda_function" "product_handler" {
@@ -275,8 +275,8 @@ resource "aws_lambda_function" "product_handler" {
   source_code_hash = data.archive_file.product_handler_zip.output_base64sha256
   role             = aws_iam_role.lambda_exec.arn
   environment { variables = { PRODUCTS_TABLE = aws_dynamodb_table.products.name, REVIEWS_TABLE = aws_dynamodb_table.reviews.name } }
-  timeout          = 30
-  memory_size      = 256
+  timeout     = 30
+  memory_size = 256
 }
 
 resource "aws_lambda_function" "cart_handler" {
@@ -288,8 +288,8 @@ resource "aws_lambda_function" "cart_handler" {
   role             = aws_iam_role.lambda_exec.arn
   layers           = [aws_lambda_layer_version.auth_layer.arn]
   environment { variables = { CART_TABLE = aws_dynamodb_table.cart.name, PRODUCTS_TABLE = aws_dynamodb_table.products.name, SECRET_KEY = var.jwt_secret } }
-  timeout          = 30
-  memory_size      = 256
+  timeout     = 30
+  memory_size = 256
 }
 
 resource "aws_lambda_function" "order_handler" {
@@ -300,7 +300,7 @@ resource "aws_lambda_function" "order_handler" {
   source_code_hash = data.archive_file.order_handler_zip.output_base64sha256
   role             = aws_iam_role.lambda_exec.arn
   layers           = [aws_lambda_layer_version.auth_layer.arn]
-  environment { variables = { ORDERS_TABLE = aws_dynamodb_table.orders.name, PRODUCTS_TABLE = aws_dynamodb_table.products.name, REVIEWS_TABLE = aws_dynamodb_table.reviews.name, SECRET_KEY = var.jwt_secret } }
+  environment { variables = { ORDERS_TABLE = aws_dynamodb_table.orders.name, PRODUCTS_TABLE = aws_dynamodb_table.products.name, REVIEWS_TABLE = aws_dynamodb_table.reviews.name, SECRET_KEY = var.jwt_secret, SNS_TOPIC_ARN = aws_sns_topic.order_notifications.arn } }
 }
 
 resource "aws_lambda_function" "profile_handler" {
@@ -312,8 +312,8 @@ resource "aws_lambda_function" "profile_handler" {
   role             = aws_iam_role.lambda_exec.arn
   layers           = [aws_lambda_layer_version.auth_layer.arn]
   environment { variables = { USERS_TABLE = aws_dynamodb_table.users.name, SECRET_KEY = var.jwt_secret } }
-  timeout          = 30
-  memory_size      = 256
+  timeout     = 30
+  memory_size = 256
 }
 
 resource "aws_lambda_function" "review_handler" {
@@ -336,8 +336,8 @@ resource "aws_lambda_function" "wishlist_handler" {
   role             = aws_iam_role.lambda_exec.arn
   layers           = [aws_lambda_layer_version.auth_layer.arn]
   environment { variables = { WISHLIST_TABLE = aws_dynamodb_table.wishlist.name, PRODUCTS_TABLE = aws_dynamodb_table.products.name, REVIEWS_TABLE = aws_dynamodb_table.reviews.name, SECRET_KEY = var.jwt_secret } }
-  timeout          = 30
-  memory_size      = 256
+  timeout     = 30
+  memory_size = 256
 }
 
 resource "aws_lambda_function" "seller_product_handler" {
@@ -705,4 +705,31 @@ resource "aws_s3_object" "frontend_files" {
     "svg"  = "image/svg+xml",
     "ico"  = "image/x-icon"
   }, split(".", each.value)[length(split(".", each.value)) - 1], "application/octet-stream")
+}
+# --- BUSINESS NOTIFICATIONS (SNS) ---
+
+resource "aws_sns_topic" "order_notifications" {
+  name = "${var.project_name}-order-notifications"
+}
+
+resource "aws_sns_topic_subscription" "order_email_alerts" {
+  topic_arn = aws_sns_topic.order_notifications.arn
+  protocol  = "email"
+  endpoint  = "hariprasathad@gmail.com"
+}
+
+resource "aws_iam_role_policy" "lambda_sns_publish" {
+  name = "${var.project_name}-sns-publish-policy"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = "sns:Publish",
+        Resource = aws_sns_topic.order_notifications.arn
+      }
+    ]
+  })
 }
