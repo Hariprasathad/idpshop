@@ -58,9 +58,6 @@ async function syncWishlist() {
 
 // Update Profile info in Navbar/Tab
 function updateProfileUI() {
-    const initial = user.name.charAt(0).toUpperCase();
-    const avatar = document.getElementById('userInitial');
-    if (avatar) avatar.innerText = initial;
     
     const welcomeName = document.getElementById('welcomeName');
     if (welcomeName) welcomeName.innerText = user.name;
@@ -180,7 +177,8 @@ function renderProducts(products, targetId = 'productGrid', append = false) {
                 
                 <div class="rating-stars">
                     ${generateStars(p.rating)}
-                    <span class="rating-value">${p.rating || 0}</span>
+                    <span class="rating-value" style="margin-right: 5px;">${p.rating || 0}</span>
+                    <span class="review-count" style="color: #64748b; font-size: 0.8rem;">(${p.totalReviews || 0} reviews)</span>
                 </div>
 
                 <div class="price-section" style="flex-direction: column; align-items: flex-start; gap: 2px; margin-bottom: 1rem;">

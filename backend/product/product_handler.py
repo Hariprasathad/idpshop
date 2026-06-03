@@ -64,7 +64,7 @@ def response(status, body):
 # ⭐ CALCULATE RATING
 # ============================================
 
-def get_average_rating(product_id):
+def get_review_stats(product_id):
     review_result = reviews_table.scan(
         FilterExpression=
         "productId = :pid",
@@ -76,17 +76,19 @@ def get_average_rating(product_id):
     reviews = review_result.get("Items", [])
 
     if not reviews:
-        return 0
+        return {"rating": 0, "totalReviews": 0}
 
     total_rating = sum(
         review.get("rating", 0)
         for review in reviews
     )
 
-    return round(
+    avg_rating = round(
         total_rating / len(reviews),
         1
     )
+    
+    return {"rating": avg_rating, "totalReviews": len(reviews)}
 
 # ============================================
 # 📦 FORMAT PRODUCT
@@ -100,6 +102,8 @@ def format_product(item):
     selling_price = price - (
         (price * discount) / 100
     )
+
+    stats = get_review_stats(item.get("productId"))
 
     return {
         "productId":
@@ -119,9 +123,9 @@ def format_product(item):
         "sellingPrice":
         int(selling_price),
         "rating":
-        get_average_rating(
-            item.get("productId")
-        ),
+        stats["rating"],
+        "totalReviews":
+        stats["totalReviews"],
         "stock":
         item.get("stock", 0),
         "total":
