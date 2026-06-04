@@ -133,6 +133,17 @@ idpshop/
 
 ---
 
+## 🧪 Backend Unit Testing
+
+The project includes a robust, isolated unit testing suite for the AWS Lambda backend, written using `pytest`. 
+
+- **Full Coverage**: Includes 16+ unit tests covering Auth, Orders, Cart, and Product logic.
+- **Zero Cloud Dependencies**: Tests are built using mocked `boto3` responses and local data fixtures, meaning they run in milliseconds without needing to connect to real AWS infrastructure.
+- **Race Condition Testing**: Includes specialized tests (like `test_create_order_insufficient_stock`) to verify that DynamoDB conditional expressions correctly prevent inventory race conditions.
+- **Run Tests Locally**: You can run the entire suite locally by executing `python backend/tests/run_tests.py`.
+
+---
+
 ## 🤖 Continuous Integration (CI)
 
 This repository implements a **Continuous Integration (CI)** pipeline via **GitHub Actions** (`.github/workflows/ci.yml`) to ensure high code quality and infrastructure integrity. 
