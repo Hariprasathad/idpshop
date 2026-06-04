@@ -7,10 +7,11 @@ from datetime import datetime
 from decimal import Decimal
 
 # ============================================
-# 🔥 DynamoDB
+# 🔥 AWS Resources
 # ============================================
 
 dynamodb = boto3.resource("dynamodb")
+sns_client = boto3.client("sns")
 
 orders_table = dynamodb.Table(
     os.environ["ORDERS_TABLE"]
@@ -274,6 +275,18 @@ def lambda_handler(event, context):
                     ConditionExpression="stock >= :q",
                     ExpressionAttributeValues={":q": quantity}
                 )
+
+                # 📨 SEND SNS NOTIFICATION
+                try:
+                    sns_topic_arn = os.environ.get("SNS_TOPIC_ARN")
+                    if sns_topic_arn:
+                        sns_client.publish(
+                            TopicArn=sns_topic_arn,
+                            Subject="New Order Received",
+                            Message=f"Order ID: {order_item['orderId']}\nProduct: {order_item['productName']}\nQuantity: {quantity}\nCustomer ID: {user_id}"
+                        )
+                except Exception as e:
+                    print(f"SNS Publish Error: {e}")
 
             # ============================================
             # ✅ SUCCESS
