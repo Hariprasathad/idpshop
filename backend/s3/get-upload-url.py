@@ -30,7 +30,7 @@ def lambda_handler(event, context):
         )
 
         # Use CloudFront domain for images
-        CLOUDFRONT_DOMAIN = "d3r1l4tg7odjwk.cloudfront.net" 
+        CLOUDFRONT_DOMAIN = "d3ox0o8h7so841.cloudfront.net" 
         image_url = f"https://{CLOUDFRONT_DOMAIN}/images/{file_name}"
 
         return {

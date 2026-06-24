@@ -6,7 +6,7 @@
 
 A fully serverless, highly-scalable e-commerce platform built on AWS microservices and modern frontend technologies.
 
-**🌐 [Live Demo (Click Here to Visit IDPShop)](https://d3r1l4tg7odjwk.cloudfront.net/pages/auth/login.html)**
+**🌐 [Live Demo (Click Here to Visit IDPShop)](https://d3ox0o8h7so841.cloudfront.net/pages/auth/login.html)**
 ---
 
 ## 📌 Project Overview

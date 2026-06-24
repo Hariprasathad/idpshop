@@ -52,8 +52,10 @@ def convert_decimal(obj):
             key = parts[1]
             if key.startswith("images/"):
                 key = key[7:] # Strip leading "images/"
-            return f"https://d3r1l4tg7odjwk.cloudfront.net/images/{key}"
+            return f"https://d3ox0o8h7so841.cloudfront.net/images/{key}"
 
+    if isinstance(obj, str) and 'd3r1l4tg7odjwk.cloudfront.net' in obj:
+        return obj.replace('d3r1l4tg7odjwk.cloudfront.net', 'd3ox0o8h7so841.cloudfront.net')
     return obj
 
 # ============================================
@@ -65,7 +67,7 @@ def response(status, body):
         "statusCode": status,
         "headers": {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "https://d3r1l4tg7odjwk.cloudfront.net",
+            "Access-Control-Allow-Origin": "https://d3ox0o8h7so841.cloudfront.net",
             "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type,Authorization"
         },

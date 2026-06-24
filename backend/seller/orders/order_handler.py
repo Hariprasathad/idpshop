@@ -32,6 +32,8 @@ def convert_decimal(obj):
     elif isinstance(obj, Decimal):
         return int(obj)
 
+    if isinstance(obj, str) and 'd3r1l4tg7odjwk.cloudfront.net' in obj:
+        return obj.replace('d3r1l4tg7odjwk.cloudfront.net', 'd3ox0o8h7so841.cloudfront.net')
     return obj
 
 # ============================================

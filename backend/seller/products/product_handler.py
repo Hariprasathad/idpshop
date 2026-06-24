@@ -38,12 +38,14 @@ def convert_decimal(obj):
     elif isinstance(obj, str) and "hariprasath-product-images.s3" in obj:
         return obj.replace(
             "hariprasath-product-images.s3.ap-southeast-1.amazonaws.com", 
-            "d3r1l4tg7odjwk.cloudfront.net/images"
+            "d3ox0o8h7so841.cloudfront.net/images"
         ).replace(
             "hariprasath-product-images.s3.amazonaws.com", 
-            "d3r1l4tg7odjwk.cloudfront.net/images"
+            "d3ox0o8h7so841.cloudfront.net/images"
         )
 
+    if isinstance(obj, str) and 'd3r1l4tg7odjwk.cloudfront.net' in obj:
+        return obj.replace('d3r1l4tg7odjwk.cloudfront.net', 'd3ox0o8h7so841.cloudfront.net')
     return obj
 
 # ============================================
